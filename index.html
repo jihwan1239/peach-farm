@@ -1,0 +1,948 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#ffd9c7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="복숭아 농장">
+<title>복숭아 농장</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@latest/dist/galmuri.css">
+<style>
+:root{
+  --bg:#ffe3d6; --panel:#fff8ef; --ink:#5a3428; --line:#7a4a3a; --accent:#ff8a80;
+  --good:#6cc35a; --gold:#e8a923;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font-family:'Galmuri11','Galmuri9',system-ui,sans-serif;overscroll-behavior:none;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#app{height:100dvh;max-width:480px;margin:0 auto;display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top) 10px env(safe-area-inset-bottom)}
+#hud{display:flex;gap:8px;align-items:center;padding:10px 2px 8px;flex-wrap:nowrap}
+.stat{display:flex;align-items:center;gap:5px;background:var(--panel);padding:5px 9px 5px 7px;
+  border:2px solid var(--line);border-radius:2px;box-shadow:0 2px 0 var(--line);font-size:14px;min-width:0}
+.stat img{width:21px;height:21px;image-rendering:pixelated}
+#clock{margin-left:auto;font-size:12px;opacity:.8;white-space:nowrap}
+#stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+#box{position:relative}
+#game{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;
+  border:3px solid var(--line);border-radius:2px;box-shadow:0 4px 0 var(--line);touch-action:none;cursor:pointer}
+#fx{position:absolute;inset:3px;pointer-events:none;overflow:hidden}
+.ft{position:absolute;transform:translate(-50%,-50%);font-size:13px;white-space:nowrap;color:#fff;
+  text-shadow:-1px 0 var(--line),1px 0 var(--line),0 -1px var(--line),0 1px var(--line),0 2px var(--line);
+  animation:up 1s ease-out forwards}
+.ft.gold{color:#ffe066}.ft.pink{color:#ffb3c7}.ft.blue{color:#bfe6ff}.ft.green{color:#c9f2a8}
+@keyframes up{0%{opacity:0;margin-top:4px}15%{opacity:1}100%{opacity:0;margin-top:-26px}}
+#bar{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:10px 0 12px}
+#bar button{font-size:13px;padding:8px 2px 7px;white-space:nowrap}
+#hud .icon{background:var(--panel);border:2px solid var(--line);box-shadow:0 2px 0 var(--line);border-radius:2px;
+  width:34px;height:34px;padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+#hud .icon img{width:20px;height:20px;image-rendering:pixelated}
+#buffs{display:flex;gap:6px;flex-wrap:wrap;min-height:0;padding:0 2px 6px}
+#buffs:empty{display:none}
+.buff{display:flex;align-items:center;gap:4px;font-size:11px;background:#fff3d6;border:2px solid #d9a35a;padding:2px 7px 2px 4px;border-radius:2px}
+.buff img{width:16px;height:16px;image-rendering:pixelated}
+.jumak-head{display:flex;gap:10px;align-items:center;background:#fff1dc;border:2px dashed #d9a35a;padding:8px 10px;margin-bottom:6px}
+.jumak-head img{width:36px;height:46px;image-rendering:pixelated}
+.stamps{display:flex;gap:3px;margin-top:3px}
+.stamps i{width:12px;height:12px;border:2px solid #d26a5c;border-radius:50%;display:block}
+.stamps i.on{background:#d26a5c}
+.eat{text-align:center;padding:14px 0 6px}
+.eat img{width:120px;image-rendering:pixelated;animation:nom .45s steps(2) 3}
+@keyframes nom{50%{transform:scale(1.08) rotate(-4deg)}}
+.notice{background:#fff1dc;border:2px dashed #d9a35a;padding:10px 12px;margin:8px 0;line-height:1.6}
+.notice[hidden]{display:none}
+.wide{width:100%;flex-direction:row !important;justify-content:center;gap:8px !important;padding:12px 8px !important;font-size:15px !important;margin-top:8px}
+.wide img{width:22px;height:22px;image-rendering:pixelated}
+.wide.pink{background:#ffe0d8}
+.acct{display:flex;align-items:center;gap:8px;margin-top:6px}
+.acct code{-webkit-user-select:text;user-select:text;font-family:inherit;font-size:16px;flex:1;letter-spacing:.5px;word-break:break-all}
+.farm-hero{text-align:center;padding:4px 0 6px}
+.farm-hero img{width:96px;image-rendering:pixelated}
+#bar button,.btn{font:inherit;color:var(--ink);background:var(--panel);border:2px solid var(--line);
+  border-radius:2px;box-shadow:0 3px 0 var(--line);padding:9px 4px 8px;font-size:14px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:3px}
+#bar button img{width:24px;height:24px;image-rendering:pixelated}
+#bar button:active,.btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
+.btn:disabled{opacity:.45;transform:none;box-shadow:0 3px 0 var(--line)}
+#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 64px);transform:translate(-50%,-8px);
+  background:var(--panel);border:2px solid var(--line);box-shadow:0 3px 0 var(--line);padding:8px 12px;
+  font-size:13px;max-width:88vw;text-align:center;opacity:0;pointer-events:none;transition:.25s;z-index:20}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+#modal{position:fixed;inset:0;background:rgba(70,35,25,.45);display:flex;align-items:center;justify-content:center;z-index:30;padding:16px}
+#modal[hidden]{display:none}
+.panel{background:var(--panel);border:3px solid var(--line);box-shadow:0 5px 0 var(--line);width:100%;max-width:380px;
+  max-height:84dvh;display:flex;flex-direction:column}
+.ph{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:2px dashed #e0b9a6;font-size:16px}
+.ph button{font:inherit;font-size:18px;background:none;border:0;color:var(--ink);cursor:pointer;padding:0 4px}
+#mBody{overflow:auto;padding:10px 12px 14px;font-size:13px;line-height:1.6}
+.row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed #ecd0c2}
+.row:last-child{border-bottom:0}
+.row img{width:32px;height:32px;image-rendering:pixelated;flex:none}
+.row .t{flex:1;min-width:0}
+.row .t b{font-weight:normal;font-size:14px}
+.row .t small{display:block;opacity:.7;font-size:12px;line-height:1.4}
+.row .btn{flex-direction:row;padding:7px 9px;font-size:13px;white-space:nowrap}
+.row .btn img{width:16px;height:16px}
+.lv{color:#d26a5c;font-size:12px}
+.help p{margin:0 0 8px}
+.danger{color:#c0392b}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="hud">
+    <div class="stat"><img id="icCoin" alt=""><span id="coins">0</span></div>
+    <div class="stat"><img id="icPeach" alt=""><span id="peaches">0</span></div>
+    <div class="stat" id="goldStat" hidden><img id="icGold" alt=""><span id="golds">0</span></div>
+    <div id="clock"></div>
+    <button class="icon" id="bSound" aria-label="소리"><img id="icSound" alt=""></button>
+  </header>
+  <div id="buffs"></div>
+  <main id="stage"><div id="box"><canvas id="game" width="160" height="256"></canvas><div id="fx"></div></div></main>
+  <nav id="bar">
+    <button id="bShop"><img id="icShop" alt="">상점</button>
+    <button id="bSell"><img id="icSell" alt="">팔기</button>
+    <button id="bJumak"><img id="icJumak" alt="">주막</button>
+    <button id="bReal"><img id="icReal" alt="">진짜 농장</button>
+    <button id="bInfo"><img id="icInfo" alt="">기록</button>
+  </nav>
+</div>
+<div id="toast"></div>
+<div id="modal" hidden><div class="panel"><div class="ph"><span id="mTitle"></span><button id="mClose" aria-label="닫기">×</button></div><div id="mBody"></div></div></div>
+
+<script>
+'use strict';
+// ================= 설정 =================
+const W = 160, H = 256;
+const SAVE_KEY = 'peach-farm-v1';
+const TREE_POS = [[48,104],[112,104],[48,164],[112,164],[48,224],[112,224]];
+const SLOT_COST = [0,0,40,100,220,450];
+const STAGE_MIN = [3,8,12,15];          // 단계별 성장 시간(분): 새싹→어린나무→꽃→풋열매→익음
+const WATER_MIN = 90;                    // 물이 다 마르는 시간(분)
+const PRUNE_MIN = 150;                   // 가지가 무성해지는 시간(분)
+const PEACH_PRICE = 6, GOLD_PRICE = 60;
+
+// ===== 실제 복숭아 농장 정보 (여기만 바꾸면 돼요) =====
+const REAL_FARM = {
+  name: '우리 복숭아 농장',                 // 지인분 농장 이름
+  intro: '이 게임 속 복숭아밭은 실제로 복숭아나무를 키우고 있는 농장에서 시작됐어요. 올해 막 어린 나무를 심었답니다.',
+  shopUrl: '',                              // 판매 페이지 주소가 생기면 여기에 넣어요 (예: 'https://smartstore.naver.com/...')
+  comingSoon: '진짜 복숭아나무는 아직 열심히 자라는 중이에요. 다 익으면 여기서 바로 주문할 수 있게 알려드릴게요!',
+  bank: 'OO은행',                           // 은행 이름
+  account: '000-0000-0000-00',              // 계좌번호
+  holder: '예금주',                         // 예금주
+  thanks: '시원한 냉수 한 잔 감사히 받을게요. 복숭아 잘 키워 볼게요!'
+};
+
+// ===== 이가네 주막 메뉴 =====
+const MENU = [
+  {id:'makgeolli', name:'막걸리', price:15, desc:'30분 동안 황금 복숭아가 두 배 잘 열려요', say:'캬~ 기분 좋게 한 사발!'},
+  {id:'pajeon',    name:'파전',   price:25, desc:'든든하게 먹고 모든 나무에 물을 가득 줘요', say:'바삭바삭, 힘이 나서 물을 다 길어 왔어요'},
+  {id:'shrimp',    name:'새우구이', price:40, desc:'다음 수확 3번은 복숭아가 2개씩 더 열려요', say:'탱글탱글 새우 덕분에 손이 빨라졌어요'},
+  {id:'bbq',       name:'바베큐', price:60, desc:'1시간 동안 나무가 1.5배 빨리 자라요', say:'지글지글~ 오늘은 농장 일이 술술 풀리겠어요'},
+];
+const UPGRADES = {
+  spr:   {name:'스프링클러', desc:'물이 천천히 말라요', cost:[60,160,380]},
+  scare: {name:'허수아비',   desc:'새가 덜 찾아와요',   cost:[50,140,320]},
+  fert:  {name:'유기농 비료', desc:'나무가 더 빨리 자라요', cost:[80,210,480]},
+};
+const FRUIT_POS = [[-7,-21],[5,-23],[-1,-16],[9,-16],[-10,-14],[1,-28],[-5,-27]];
+const PERCH = [[-9,-30],[0,-35],[9,-30],[-13,-22],[13,-22]];
+const STAGE_NAME = ['새싹','어린 나무','꽃 핀 나무','풋복숭아','다 익었어요'];
+
+const rand = (a,b)=>a+Math.random()*(b-a);
+const irand = (a,b)=>Math.floor(rand(a,b+1));
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+
+// ================= 상태 =================
+function newTree(unlocked){ return {u:unlocked, stage:0, growth:0, water:70, prune:0, fruit:0, golden:false, petCd:0}; }
+function newState(){
+  const trees = []; for(let i=0;i<6;i++) trees.push(newTree(i<2));
+  return {coins:20, peaches:0, gold:0, trees, up:{spr:0,scare:0,fert:0},
+    stats:{harvest:0,cats:0,birds:0,gold:0,water:0,prune:0}, last:Date.now(), muted:false, seenHelp:false,
+    buff:{grow:0,gold:0,bonus:0}, jumak:{stamps:0,eaten:{}}};
+}
+let S;
+try{ S = JSON.parse(localStorage.getItem(SAVE_KEY)) }catch(e){}
+if(!S || !S.trees){ S = newState(); }
+S.buff = S.buff || {grow:0,gold:0,bonus:0}; S.jumak = S.jumak || {stamps:0,eaten:{}};
+function save(){ S.last = Date.now(); try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)) }catch(e){} }
+
+// ================= 픽셀 스프라이트 =================
+function spr(rows, pal){
+  const h=rows.length, w=rows[0].length, c=document.createElement('canvas'); c.width=w; c.height=h;
+  const g=c.getContext('2d');
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){ const ch=rows[y][x]; if(ch!=='.' && pal[ch]){ g.fillStyle=pal[ch]; g.fillRect(x,y,1,1);} }
+  return c;
+}
+function flip(src){ const c=document.createElement('canvas'); c.width=src.width; c.height=src.height;
+  const g=c.getContext('2d'); g.translate(src.width,0); g.scale(-1,1); g.drawImage(src,0,0); return c; }
+
+const CAT_PAL = {k:'#4b3a3a', w:'#fffaf2', y:'#ffd257', e:'#2b2222', n:'#ff8fa3', p:'#ffc9d3'};
+const CAT_TOP = [
+  '..........k...k.',
+  '.k.......kwk.kyk',
+  'kyk......kwwwyyk',
+  'kyk......kwewwek',
+  '.kykkkkkkwpwnwpk',
+  '..kyywwwwwwwwwwk',
+  '..kyyywwwwyywwk.',
+  '..kwwwwwwwyywwk.'];
+const catA = spr([...CAT_TOP,'..kwk..kwk.kwk..','..kk...kk..kk...'], CAT_PAL);
+const catB = spr([...CAT_TOP,'...kwk.kwk..kwk.','...kk..kk...kk..'], CAT_PAL);
+const catSit = spr([...CAT_TOP,'..kkkkkkkkkkkk..'], CAT_PAL);
+const sleepTop = CAT_TOP.slice(); sleepTop[3] = 'kyk......kwkwwkk';
+const catSleep = spr([...sleepTop,'..kkkkkkkkkkkk..'], CAT_PAL);
+const CAT = {A:[catA,flip(catA)], B:[catB,flip(catB)], sit:[catSit,flip(catSit)], sleep:[catSleep,flip(catSleep)]};
+
+const BIRD_PAL = {k:'#3d3550', b:'#78aee0', l:'#b9dcf7', w:'#fff5e6', o:'#ffa640', e:'#1d1d1d'};
+const birdUp = spr(['.kk.kkk..','klbkbbek.','.kkbbbbbo','.kbbbbbk.','..kwwwk..','...k.k...'], BIRD_PAL);
+const birdDn = spr(['....kkk..','...kbbek.','.kkbbbbbo','kbblbbbk.','.kkwwwk..','...k.k...'], BIRD_PAL);
+const BIRD = {up:[birdUp,flip(birdUp)], dn:[birdDn,flip(birdDn)]};
+
+const PEACH_PAL = {p:'#ffb2a1', h:'#fff1e6', o:'#ff7f7f', g:'#5aa85a', d:'#3f7d42'};
+const GOLD_PAL  = {p:'#ffd84a', h:'#fff8c2', o:'#e8a923', g:'#5aa85a', d:'#3f7d42'};
+const PEACH_ROWS = ['....gd.','...gd..','.pphpo.','pphppoo','phpppoo','ppppooo','.pppoo.','..poo..'];
+const icPeach = spr(PEACH_ROWS, PEACH_PAL), icGold = spr(PEACH_ROWS, GOLD_PAL);
+const fruitS = spr(['.pp.','phpo','ppoo','.oo.'], PEACH_PAL);
+const fruitG = spr(['.pp.','phpo','ppoo','.oo.'], GOLD_PAL);
+const icCoin = spr(['..ooo..','.oyyyo.','oyYyyyo','oyYyyyo','oyyyyyo','.oyyyo.','..ooo..'], {o:'#b07a12',y:'#ffd84a',Y:'#fff6b0'});
+const icDrop = spr(['...b...','..bbb..','.bbbbb.','bbbbbbb','bLbbbbb','bbLbbbb','.bbbbb.'], {b:'#5aaef0',L:'#d4efff'});
+const icScis = spr(['k.....k','.k...k.','..k.k..','...k...','.rr.rr.','r..r..r','.rr.rr.'], {k:'#7d8a96',r:'#e5534b'});
+const icHeart = spr(['rr.rr','rrrrr','.rrr.','..r..'], {r:'#ff7a9a'});
+const icSprout = spr(['.gg.gg.','gggggg.','.g.g...','...g...','..sss..','.sssss.','sssssss'], {g:'#6cc35a',s:'#a0683f'});
+const icShop = spr(['.rwrwrwr.','rwrwrwrwr','rrrrrrrrr','.kkkkkkk.','.kyyykck.','.kyyykck.','.kkkkkkk.'], {r:'#ff8a80',w:'#fff6ee',k:'#7a4a3a',y:'#ffe9a8',c:'#c99'});
+const icBook = spr(['kkkkkkk.','kppppppk','kpwwwwpk','kppppppk','kpwwwwpk','kppppppk','kkkkkkk.'], {k:'#7a4a3a',p:'#ffc4b8',w:'#fff'});
+const icNote = spr(['...kk..','...kkk.','...k.kk','...k...','.kkk...','kkkk...','.kk....'], {k:'#5a3428'});
+const icMute = spr(['k.....k','.k...k.','..k.k..','...k...','..k.k..','.k...k.','k.....k'], {k:'#c0392b'});
+const scarecrow = spr([
+  '...hhhhh...','..hHHHHHh..','hhhhhhhhhhh','...fffff...','...fefef...','...ffmff...',
+  'sssssssssss','h..sssss..h','...ssbss...','...rrrrr...','...rr.rr...',
+  '.....t.....','.....t.....','.....t.....','....ttt....'],
+  {h:'#f2c94c',H:'#c9952b',f:'#ffe7c7',e:'#333',m:'#d77',s:'#e57373',b:'#ffeb99',r:'#6d8fd1',t:'#8b5a3c'});
+const zzz = spr(['####','..#.','.#..','####'], {'#':'#6a7bd6'});
+const DIG = {
+  '0':['###','#.#','#.#','#.#','###'],'1':['.#.','##.','.#.','.#.','###'],'2':['###','..#','###','#..','###'],
+  '3':['###','..#','###','..#','###'],'4':['#.#','#.#','###','..#','..#'],'5':['###','#..','###','..#','###'],
+  '6':['###','#..','###','#.#','###'],'7':['###','..#','..#','.#.','.#.'],'8':['###','#.#','###','#.#','###'],
+  '9':['###','#.#','###','..#','###']};
+const digits = {}; for(const k in DIG){ digits[k] = spr(DIG[k], {'#':'#5a3428'}); }
+
+function asURL(c, scale=4){ const o=document.createElement('canvas'); o.width=c.width*scale; o.height=c.height*scale;
+  const g=o.getContext('2d'); g.imageSmoothingEnabled=false; g.drawImage(c,0,0,o.width,o.height); return o.toDataURL(); }
+
+const FOOD = {
+  bbq: spr([
+    '..kkk.kkk.kkk..',
+    '.kmMMkgGgkmMMk.',
+    'ssmmmsgggsmmmss',
+    '.kmmmkgggkmmmk.',
+    '..kkk.kkk.kkk..'], {k:'#5a2d1e',m:'#c8643c',M:'#f0a070',g:'#4caf50',G:'#9be07a',s:'#d9b48a'}),
+  pajeon: spr([
+    '....kkkkkk....',
+    '..kkyyyyyykk..',
+    '.kyygyyyygyyk.',
+    'kyygyyrryygyyk',
+    'kyyyyggyyyyyyk',
+    'kyrryyyygyyyyk',
+    '.kyyyyggyyyyk.',
+    '..kkyyyyyykk..',
+    '....kkkkkk....'], {k:'#9a5a24',y:'#f2c063',g:'#5aa84a',r:'#e0503c'}),
+  shrimp: spr([
+    '.oooo...oooo..',
+    'oOOooo.oOOooo.',
+    'oeOOoo.oeOOoo.',
+    'gggggogggggogg',
+    '...too....too.',
+    'gggttgggggttgg',
+    '..ttt.....ttt.'], {o:'#ff8a5c',O:'#ffc29e',e:'#3b2a20',g:'#6b6b6b',t:'#e0503c'}),
+  makgeolli: spr([
+    '.kkkkkkkkkk.',
+    'kwwwWwwwwwwk',
+    'kbbbbbbbbbbk',
+    'kbBbbbbbbbbk',
+    '.kbbbbbbbbk.',
+    '..kbbbbbbk..',
+    '...kkkkkk...'], {k:'#5a3428',w:'#f3efe2',W:'#ffffff',b:'#b07a4a',B:'#d9a06a'}),
+};
+const icLantern = spr(['...k...','.kkkkk.','krrRrrk','krRrrrk','krrrrrk','krrrrrk','.kkkkk.','...y...','..yyy..'],
+  {k:'#5a3428',r:'#e0503c',R:'#ff9a7a',y:'#ffd84a'});
+const icCup = spr(['k.....k','kbbbbbk','kbLbbbk','kbbbbbk','.kbbbk.','.kkkkk.'], {k:'#5a3428',b:'#7cc4f5',L:'#e4f5ff'});
+const icBox = spr([
+  '..pphpo..pphpo..',
+  '.pphppoopphppoo.',
+  'kkkkkkkkkkkkkkkk',
+  'kwwwwwwwwwwwwwwk',
+  'kwkkkkkkkkkkkkwk',
+  'kwwwwwwwwwwwwwwk',
+  'kkkkkkkkkkkkkkkk'], {p:'#ffb2a1',h:'#fff1e6',o:'#ff7f7f',k:'#8b5a3c',w:'#e8bf8e'});
+const jumakHouse = spr([
+  '......kkkk......',
+  '...kkkrrrrkkk...',
+  '.kkrrrrrrrrrrkk.',
+  'krrrrrrrrrrrrrrk',
+  'kkkkkkkkkkkkkkkk',
+  '.kwwwwwwwwwwwwk.',
+  '.kwbbwwwwwwbbwk.',
+  '.kwbbwkkkkwbbwk.',
+  '.kwwwwkddkwwwwk.',
+  '.kwwwwkddkwwwwk.',
+  '.kkkkkkddkkkkkk.',
+  'gggggggggggggggg'], {k:'#5a3428',r:'#8a6a54',w:'#f6e3c4',b:'#ffd84a',d:'#a8714c',g:'#6cc35a'});
+
+// ================= 나무 그리기(캐시) =================
+const LEAF = {o:'#2f5d34', f:'#6cc35a', h:'#a8e37f', s:'#4c9a48'};
+const LEAF_DRY = {o:'#6b5a2a', f:'#c8b85a', h:'#e6d98a', s:'#a18f40'};
+const BLOSSOM = [[-6,-27],[3,-30],[8,-22],[-10,-20],[-2,-21],[6,-15],[-6,-14],[11,-17],[0,-25],[-12,-24],[4,-26],[-3,-16]];
+const treeCache = {};
+function buildTree(stage, dry, messy){
+  const c=document.createElement('canvas'); c.width=48; c.height=50; const g=c.getContext('2d');
+  const ox=24, oy=48, P = dry?LEAF_DRY:LEAF;
+  const rect=(x,y,w,h,col)=>{ g.fillStyle=col; g.fillRect(ox+x,oy+y,w,h); };
+  if(stage===0){
+    rect(0,-7,1,7,P.s);
+    rect(-4,-10,4,2,P.f); rect(-4,-10,1,1,P.o); rect(-1,-9,1,1,P.s);
+    rect(1,-11,4,2,P.f); rect(4,-11,1,1,P.o); rect(1,-10,1,1,P.s);
+    rect(-3,-9,2,1,P.h); rect(2,-11,2,1,P.h);
+    return c;
+  }
+  const th = stage===1?11:15, tw = stage===1?2:3, tx = -Math.floor(tw/2);
+  rect(tx-1,-th,tw+2,th,'#5b3925'); rect(tx,-th,tw,th,'#8b5a3c'); rect(tx,-th,1,th,'#a8714c');
+  rect(tx-3,-1,3,1,'#5b3925'); rect(tx+tw,-1,3,1,'#5b3925');
+  const discs = stage===1 ? [[0,-17,6],[-5,-13,4],[5,-13,4]]
+                          : [[0,-26,8],[-8,-21,7],[8,-21,7],[-4,-16,6],[4,-16,6]];
+  if(messy){
+    const twigs = stage===1 ? [[-8,-18,-12,-23],[8,-18,12,-22],[0,-23,1,-27]]
+                            : [[-12,-27,-17,-33],[12,-28,16,-35],[-14,-15,-20,-14],[14,-14,20,-11],[0,-34,1,-40]];
+    for(const [x1,y1,x2,y2] of twigs){
+      const n=Math.max(Math.abs(x2-x1),Math.abs(y2-y1));
+      for(let i=0;i<=n;i++){ rect(Math.round(x1+(x2-x1)*i/n), Math.round(y1+(y2-y1)*i/n), 1,1,'#6b4430'); }
+      rect(x2-1,y2-1,3,2,P.f); rect(x2,y2-2,1,1,P.f); rect(x2-1,y2+1,1,1,P.o);
+    }
+  }
+  const disc=(cx,cy,r,shade)=>{
+    for(let y=-r;y<=r;y++) for(let x=-r;x<=r;x++){
+      if(x*x+y*y > r*r+r*0.6) continue;
+      let col = P.o;
+      if(shade){ const l = -(x/r)*0.6 - (y/r)*0.8; col = l>0.5?P.h : l<-0.45?P.s : P.f; }
+      rect(cx+x,cy+y,1,1,col);
+    }
+  };
+  for(const [x,y,r] of discs) disc(x,y,r+1,false);
+  for(const [x,y,r] of discs) disc(x,y,r,true);
+  if(stage===2 && !dry){
+    for(const [x,y] of BLOSSOM){ rect(x-1,y,3,1,'#ffb3cf'); rect(x,y-1,1,3,'#ffb3cf'); rect(x,y,1,1,'#fff6c9'); }
+  }
+  if(stage===3){
+    for(const [x,y] of FRUIT_POS.slice(0,5)){ rect(x-1,y-1,2,2,'#c4e67c'); rect(x-1,y-1,1,1,'#e9f7b8'); rect(x,y,1,1,'#8fbf4a'); }
+  }
+  return c;
+}
+function treeImg(stage, dry, messy){
+  const key=stage+'_'+(dry?1:0)+'_'+(messy?1:0);
+  return treeCache[key] || (treeCache[key]=buildTree(stage,dry,messy));
+}
+
+// ================= 배경 =================
+const grassLayer = (()=>{
+  const c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d');
+  let seed=7; const r=()=>((seed=(seed*16807)%2147483647)/2147483647);
+  g.fillStyle='#8fd26a'; g.fillRect(0,50,W,H-50);
+  g.fillStyle='#86c962'; for(let y=58;y<H;y+=12) for(let x=(y/12%2)*8;x<W;x+=16) g.fillRect(x,y,8,6);
+  for(let i=0;i<170;i++){ const x=Math.floor(r()*W), y=Math.floor(54+r()*(H-56));
+    g.fillStyle = r()<0.5?'#6cb94e':'#a9e07f'; g.fillRect(x,y,1,2); g.fillRect(x+2,y+1,1,1); }
+  const fl=['#fff','#ffd2e1','#fff2a8'];
+  for(let i=0;i<22;i++){ const x=Math.floor(r()*W), y=Math.floor(60+r()*(H-62));
+    g.fillStyle=fl[i%3]; g.fillRect(x,y,1,1); g.fillRect(x-1,y+1,1,1); g.fillRect(x+1,y+1,1,1); g.fillRect(x,y+2,1,1);
+    g.fillStyle='#ffb84d'; g.fillRect(x,y+1,1,1); }
+  // 울타리
+  for(let x=2;x<W;x+=10){ g.fillStyle='#7a4a3a'; g.fillRect(x,40,5,13); g.fillStyle='#f3d2a8'; g.fillRect(x+1,41,3,11);
+    g.fillStyle='#7a4a3a'; g.fillRect(x+1,39,3,1); }
+  g.fillStyle='#7a4a3a'; g.fillRect(0,44,W,4); g.fillStyle='#e8bf8e'; g.fillRect(0,45,W,2);
+  g.fillStyle='#7a4a3a'; g.fillRect(0,49,W,1);
+  return c;
+})();
+
+function skyPhase(){
+  const d=new Date(), h=d.getHours()+d.getMinutes()/60;
+  if(h>=6 && h<7) return 'dawn'; if(h>=7 && h<17) return 'day'; if(h>=17 && h<19) return 'dusk'; return 'night';
+}
+const SKY = {
+  dawn: ['#ffd2c2','#ffe4c9','#fff0d6'], day:['#8fd3ff','#a9defe','#c9ecff'],
+  dusk: ['#ff9f8a','#ffbf8f','#ffd9a0'], night:['#1f2650','#2b3468','#3a4580']};
+const clouds = [{x:20,y:10,s:6},{x:90,y:18,s:4},{x:140,y:7,s:5}];
+const stars = Array.from({length:28},()=>[Math.floor(rand(0,W)),Math.floor(rand(0,32))]);
+const fireflies = Array.from({length:7},()=>({x:rand(0,W),y:rand(60,H),p:rand(0,6)}));
+
+function drawBG(t){
+  const ph=skyPhase(), sk=SKY[ph];
+  for(let i=0;i<3;i++){ ctx.fillStyle=sk[i]; ctx.fillRect(0,i*14,W,14); }
+  ctx.fillStyle=sk[2]; ctx.fillRect(0,42,W,8);
+  if(ph==='night'){
+    for(const [x,y] of stars){ if((Math.sin(t*2+x)+1)>0.6){ ctx.fillStyle='#fff7c9'; ctx.fillRect(x,y,1,1);} }
+    ctx.fillStyle='#fff3b0'; ctx.fillRect(126,8,8,8); ctx.fillRect(125,9,10,6); ctx.fillStyle=sk[0]; ctx.fillRect(129,7,7,7);
+  } else {
+    const sx = ph==='day'?128:(ph==='dawn'?22:134), sy= ph==='day'?10:26;
+    ctx.fillStyle = ph==='day'?'#fff3a0':'#ffef9a'; ctx.fillRect(sx-4,sy-5,9,11); ctx.fillRect(sx-5,sy-4,11,9);
+    ctx.fillStyle='#ffd24a'; ctx.fillRect(sx-3,sy-4,7,9); ctx.fillRect(sx-4,sy-3,9,7);
+    for(const c of clouds){
+      c.x += 0.02; if(c.x > W+20) c.x = -20;
+      const x=Math.floor(c.x), y=c.y, s=c.s; ctx.fillStyle='#ffffff';
+      ctx.fillRect(x,y,s*3,s); ctx.fillRect(x+s/2,y-s/2,s*2,s); ctx.fillStyle='#e6f2ff'; ctx.fillRect(x,y+s-1,s*3,1);
+    }
+  }
+  // 언덕
+  ctx.fillStyle = ph==='night'?'#3f6a5a':'#b5e59a';
+  for(let x=0;x<W;x++){ const h=Math.floor(6+4*Math.sin(x/14)+2*Math.sin(x/5)); ctx.fillRect(x,40-h,1,h+2); }
+  ctx.fillStyle = ph==='night'?'#355a4c':'#9fd987';
+  for(let x=0;x<W;x++){ const h=Math.floor(3+3*Math.sin(x/9+2)); ctx.fillRect(x,42-h,1,h+2); }
+  ctx.drawImage(grassLayer,0,0);
+}
+
+// ================= 캔버스 =================
+const cvs=document.getElementById('game'), ctx=cvs.getContext('2d'); ctx.imageSmoothingEnabled=false;
+const box=document.getElementById('box'), stage=document.getElementById('stage'), fx=document.getElementById('fx');
+function fit(){
+  const r=stage.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
+  let s=Math.min((r.width-6)/W,(r.height-10)/H);
+  if(s*dpr<4 && s*dpr>=1) s=Math.floor(s*dpr)/dpr;
+  box.style.width=(W*s+6)+'px'; box.style.height=(H*s+6)+'px';
+}
+addEventListener('resize',fit);
+
+// ================= 효과 =================
+let parts=[];
+function burst(x,y,kind,n){
+  for(let i=0;i<n;i++){
+    if(kind==='water') parts.push({x:x+rand(-10,10),y:y-rand(30,40),vx:rand(-4,4),vy:rand(10,30),g:120,life:rand(.5,.8),col:i%2?'#5aaef0':'#bfe6ff',s:1});
+    else if(kind==='leaf') parts.push({x:x+rand(-14,14),y:y-rand(14,34),vx:rand(-30,30),vy:rand(-40,-10),g:90,life:rand(.6,1),col:i%2?'#6cc35a':'#8b5a3c',s:1});
+    else if(kind==='heart') parts.push({x:x+rand(-6,6),y:y-rand(0,8),vx:rand(-8,8),vy:rand(-26,-14),g:0,life:rand(.7,1),img:icHeart});
+    else if(kind==='spark') parts.push({x:x+rand(-12,12),y:y-rand(10,34),vx:rand(-10,10),vy:rand(-30,-10),g:20,life:rand(.4,.8),col:i%2?'#fff6b0':'#ffffff',s:1});
+    else if(kind==='dust') parts.push({x:x+rand(-4,4),y:y,vx:rand(-20,20),vy:rand(-12,-2),g:30,life:rand(.3,.5),col:'#d9c3a0',s:1});
+    else if(kind==='feather') parts.push({x:x,y:y,vx:rand(-20,20),vy:rand(-20,5),g:25,life:rand(.6,1),col:'#b9dcf7',s:1});
+  }
+}
+function floatText(x,y,text,cls){
+  const el=document.createElement('div'); el.className='ft '+(cls||''); el.textContent=text;
+  el.style.left=(x/W*100)+'%'; el.style.top=(y/H*100)+'%'; fx.appendChild(el); setTimeout(()=>el.remove(),1000);
+}
+let toastT;
+function toast(msg,ms=2400){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('on');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),ms); }
+
+// ================= 소리 =================
+let actx=null;
+function sfx(kind){
+  if(S.muted) return;
+  try{
+    if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state==='suspended') actx.resume();
+    const now=actx.currentTime;
+    const tone=(f,t0,d,type='square',vol=.05,f2)=>{ const o=actx.createOscillator(), g=actx.createGain();
+      o.type=type; o.frequency.setValueAtTime(f,now+t0); if(f2) o.frequency.exponentialRampToValueAtTime(f2,now+t0+d);
+      g.gain.setValueAtTime(vol,now+t0); g.gain.exponentialRampToValueAtTime(.0001,now+t0+d);
+      o.connect(g).connect(actx.destination); o.start(now+t0); o.stop(now+t0+d+.02); };
+    if(kind==='water'){ tone(520,0,.08,'triangle',.08,900); tone(780,.07,.1,'triangle',.06,1200); }
+    else if(kind==='cut'){ tone(1400,0,.04,'square',.03); tone(1100,.06,.04,'square',.03); }
+    else if(kind==='harvest'){ [660,880,1100].forEach((f,i)=>tone(f,i*.07,.12,'square',.04)); }
+    else if(kind==='coin'){ tone(990,0,.06,'square',.035); tone(1320,.06,.12,'square',.035); }
+    else if(kind==='meow'){ tone(760,0,.28,'triangle',.07,480); }
+    else if(kind==='chirp'){ tone(2200,0,.05,'sine',.05,2800); tone(2400,.07,.05,'sine',.04,3000); }
+    else if(kind==='pet'){ tone(600,0,.08,'sine',.05,750); }
+    else if(kind==='buy'){ [523,659,784,1046].forEach((f,i)=>tone(f,i*.06,.1,'square',.035)); }
+    else if(kind==='no'){ tone(220,0,.12,'square',.04,180); }
+  }catch(e){}
+}
+const buzz=(ms=10)=>{ try{ navigator.vibrate && navigator.vibrate(ms) }catch(e){} };
+
+// ================= 성장 로직 =================
+let simNow = Date.now();
+function growTrees(dt, catIdx){
+  const growBuff = simNow < S.buff.grow ? 1.5 : 1;
+  const decay = 100/(WATER_MIN*60) * (1-0.2*S.up.spr);
+  for(let i=0;i<6;i++){
+    const t=S.trees[i]; if(!t.u) continue;
+    const catHere = i===catIdx;
+    t.water = Math.max(0, t.water - dt*decay*(catHere?3:1));
+    if(t.stage>=1) t.prune = Math.min(100, t.prune + dt*100/(PRUNE_MIN*60));
+    if(t.petCd>0) t.petCd-=dt;
+    if(t.stage<4){
+      let rate = 100/(STAGE_MIN[t.stage]*60) * (1+0.25*S.up.fert) * growBuff;
+      if(t.water<=0 || catHere) rate=0;
+      if(t.prune>=50) rate*=0.4;
+      t.growth += rate*dt;
+      if(t.growth>=100) advance(t);
+    }
+  }
+}
+function advance(t){
+  t.growth=0; t.stage++;
+  if(t.stage===4){ t.fruit = irand(4,6) + (t.prune<30?1:0); t.golden = Math.random() < (simNow < S.buff.gold ? 0.12 : 0.06); }
+}
+function simulate(sec){
+  sec=Math.min(sec, 3*86400);
+  let ripeBefore=S.trees.filter(t=>t.u&&t.stage===4).length;
+  simNow = Date.now() - sec*1000;
+  while(sec>0){ const st=Math.min(30,sec); growTrees(st,-1); sec-=st; simNow += st*1000; }
+  simNow = Date.now();
+  return {ripe:S.trees.filter(t=>t.u&&t.stage===4).length - ripeBefore,
+          thirsty:S.trees.filter(t=>t.u&&t.water<35).length};
+}
+
+// ================= 이벤트: 새 & 고양이 =================
+let birds=[], cat=null, birdTimer=rand(25,45), catTimer=rand(50,90);
+function ripeTrees(){ return S.trees.map((t,i)=>(t.u&&t.stage===4&&t.fruit>0)?i:-1).filter(i=>i>=0); }
+function spawnBirds(){
+  const ripe=ripeTrees();
+  if(ripe.length){
+    const ti=ripe[irand(0,ripe.length-1)];
+    const n=Math.max(1, irand(1,3)-Math.floor(S.up.scare/2));
+    const used=new Set();
+    for(let k=0;k<n;k++){
+      let p; do{ p=irand(0,PERCH.length-1) }while(used.has(p) && used.size<PERCH.length); used.add(p);
+      const fromL=Math.random()<.5;
+      birds.push({x:fromL?-10:W+10, y:rand(4,30), tx:TREE_POS[ti][0]+PERCH[p][0], ty:TREE_POS[ti][1]+PERCH[p][1],
+        tree:ti, state:'fly', timer:0, a:rand(0,6), dir:fromL?0:1});
+    }
+    toast('새가 복숭아를 노려요! 톡 눌러서 쫓아주세요');
+  } else {
+    const fromL=Math.random()<.5;
+    birds.push({x:fromL?-10:W+10, y:rand(4,24), tx:rand(20,140), ty:43, tree:-1, state:'fly', timer:0, a:0, dir:fromL?0:1});
+  }
+  sfx('chirp');
+}
+function updateBirds(dt){
+  for(const b of birds){
+    b.a += dt;
+    if(b.state==='fly'){
+      const dx=b.tx-b.x, dy=b.ty-b.y, d=Math.hypot(dx,dy), sp=48*dt;
+      b.dir = dx<0?1:0;
+      if(d<=sp){ b.x=b.tx; b.y=b.ty; b.state = b.tree>=0?'peck':'rest'; b.timer = b.tree>=0?rand(5,7):rand(10,16); }
+      else { b.x+=dx/d*sp; b.y+=dy/d*sp + Math.sin(b.a*10)*0.3; }
+    } else if(b.state==='peck'){
+      b.timer-=dt;
+      if(b.timer<=0){
+        const t=S.trees[b.tree];
+        if(t.stage===4 && t.fruit>0){
+          t.fruit--; floatText(b.x,b.y-6,'냠','pink'); burst(b.x,b.y,'spark',3);
+          if(t.fruit===0){ t.stage=2; t.growth=0; t.golden=false; toast('새가 복숭아를 다 먹어버렸어요 ㅠㅠ'); }
+          if(t.fruit===1 && t.golden){ /* 황금 복숭아는 맨 마지막 */ }
+          b.timer=rand(5,7);
+        } else flee(b,false);
+      }
+    } else if(b.state==='rest'){
+      b.timer-=dt; if(b.timer<=0) flee(b,false);
+    } else if(b.state==='flee'){
+      b.x+=b.vx*dt; b.y+=b.vy*dt; b.vy-=10*dt;
+    }
+  }
+  birds = birds.filter(b=>!(b.state==='flee' && (b.x<-20||b.x>W+20||b.y<-20)));
+}
+function flee(b, scared){
+  b.state='flee'; b.dir = b.x<W/2?1:0; b.vx = b.dir?-75:75; b.vy=-45;
+  if(scared){ S.stats.birds++; S.coins+=1; floatText(b.x,b.y-8,'짹! +1','gold'); burst(b.x,b.y,'feather',4); sfx('chirp'); }
+}
+
+function grassPoint(){ return [rand(14,146), rand(66,248)]; }
+function spawnCat(){
+  const open=S.trees.map((t,i)=>t.u?i:-1).filter(i=>i>=0); if(!open.length) return;
+  const ti=open[irand(0,open.length-1)], fromL=Math.random()<.5;
+  cat={x:fromL?-12:W+12, y:rand(80,236), state:'enter', tree:ti, taps:0, timer:0, play:0, a:0, dir:fromL?0:1, hop:0};
+  catToTree(); toast('고양이가 놀러 왔어요! 톡톡 눌러서 쫓아내 볼까요');
+  sfx('meow');
+}
+function catToTree(){
+  const [x,y]=TREE_POS[cat.tree]; const side = cat.x < x ? -1 : 1;
+  cat.tx = x+side*17; cat.ty = y+4; cat.state='enter';
+}
+function moveCat(dt, sp){
+  const dx=cat.tx-cat.x, dy=cat.ty-cat.y, d=Math.hypot(dx,dy), s=sp*dt;
+  if(Math.abs(dx)>0.5) cat.dir = dx<0?1:0;
+  if(d<=s){ cat.x=cat.tx; cat.y=cat.ty; return true; }
+  cat.x+=dx/d*s; cat.y+=dy/d*s; return false;
+}
+function updateCat(dt){
+  if(!cat) return;
+  cat.a+=dt;
+  if(cat.state==='enter'){
+    if(moveCat(dt,24)){ cat.state='sleep'; cat.timer=45; cat.dir = cat.x<TREE_POS[cat.tree][0]?0:1; }
+  } else if(cat.state==='sleep'){
+    cat.timer-=dt;
+    if(cat.timer<=0){
+      const t=S.trees[cat.tree];
+      if(t.stage===4 && t.fruit>1){ t.fruit--; floatText(cat.x,cat.y-14,'데굴','pink'); toast('고양이가 복숭아 하나를 굴려 가져갔어요'); }
+      catLeave(false);
+    }
+  } else if(cat.state==='dash'){
+    cat.hop+=dt;
+    if(moveCat(dt,95)){ cat.state='pause'; cat.timer=rand(.7,1.5); burst(cat.x,cat.y,'dust',4); }
+    cat.play-=dt;
+  } else if(cat.state==='pause'){
+    cat.timer-=dt; cat.play-=dt;
+    if(cat.play<=0){ const open=S.trees.map((t,i)=>t.u?i:-1).filter(i=>i>=0); cat.tree=open[irand(0,open.length-1)]; catToTree(); }
+    else if(cat.timer<=0){ const [x,y]=grassPoint(); cat.tx=x; cat.ty=y; cat.state='dash'; cat.hop=0; }
+  } else if(cat.state==='leave'){
+    if(moveCat(dt, cat.fast?85:28)) cat=null;
+  }
+}
+function catLeave(scared){
+  cat.state='leave'; cat.fast=scared;
+  cat.tx = cat.x<W/2 ? -16 : W+16; cat.ty = clamp(cat.y,70,248);
+}
+function tapCat(){
+  cat.taps++; buzz(15); sfx('meow');
+  if(cat.taps>=3){
+    const r=irand(5,10); S.coins+=r; S.stats.cats++;
+    floatText(cat.x,cat.y-16,'냐옹~ +'+r,'gold'); burst(cat.x,cat.y-8,'heart',5); catLeave(true);
+    toast('고양이를 쫓아냈어요! 또 놀러 올지도…');
+  } else {
+    floatText(cat.x,cat.y-16, cat.taps===1?'냥!?':'냥냥!','pink'); burst(cat.x,cat.y,'dust',5);
+    let x,y; do{ [x,y]=grassPoint(); }while(Math.hypot(x-cat.x,y-cat.y)<45);
+    cat.tx=x; cat.ty=y; cat.state='dash'; cat.hop=0; cat.play=14;
+  }
+}
+function catTree(){ return cat && cat.state==='sleep' ? cat.tree : -1; }
+
+// ================= 탭 처리 =================
+function treeAt(x,y){
+  for(let i=0;i<6;i++){ const [tx,ty]=TREE_POS[i]; if(x>tx-17&&x<tx+17&&y>ty-42&&y<ty+7) return i; }
+  return -1;
+}
+function tapTree(i){
+  const t=S.trees[i], [x,y]=TREE_POS[i];
+  if(!t.u){
+    const next=S.trees.findIndex(t=>!t.u);
+    if(i!==next){ toast('앞쪽 자리부터 차례로 열 수 있어요'); return; }
+    const cost=SLOT_COST[i];
+    if(S.coins<cost){ toast(`새 나무 자리는 ${cost}코인이 필요해요`); sfx('no'); return; }
+    S.coins-=cost; S.trees[i]=newTree(true); sfx('buy'); burst(x,y,'spark',10);
+    floatText(x,y-14,'새싹 심기!','green'); toast('새 복숭아나무를 심었어요'); save(); return;
+  }
+  t.shake=.35;
+  if(t.stage===4 && t.fruit>0){
+    const g = t.golden?1:0; let n=t.fruit-g;
+    let extra = 0; if(S.buff.bonus>0){ extra=2; n+=2; S.buff.bonus--; }
+    S.peaches+=n; S.gold+=g; S.stats.harvest+=t.fruit+extra; S.stats.gold+=g;
+    birds.forEach(b=>{ if(b.tree===i && b.state!=='flee') flee(b,false); });
+    floatText(x,y-30,`+${n} 복숭아`+(g?' +황금!':'')+(extra?' (새우 덕분)':''), g?'gold':'pink');
+    burst(x,y,'spark',10); sfx('harvest'); buzz(20);
+    t.stage=2; t.growth=0; t.fruit=0; t.golden=false;
+  } else if(t.water<70){
+    t.water=100; S.stats.water++; burst(x,y,'water',16); floatText(x,y-34,'촉촉','blue'); sfx('water');
+  } else if(t.stage>=1 && t.prune>=35){
+    t.prune=0; S.stats.prune++; burst(x,y,'leaf',12); floatText(x,y-34,'싹둑','green'); sfx('cut');
+  } else if(t.petCd<=0){
+    if(t.stage<4){ t.growth=Math.min(99,t.growth+5); }
+    t.petCd=15; burst(x,y-20,'heart',3); floatText(x,y-34,'쑥쑥','pink'); sfx('pet');
+  } else {
+    floatText(x,y-34, STAGE_NAME[t.stage]+(t.stage<4?' '+Math.floor(t.growth)+'%':''), '');
+  }
+  save();
+}
+cvs.addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  const r=cvs.getBoundingClientRect(), x=(e.clientX-r.left)/r.width*W, y=(e.clientY-r.top)/r.height*H;
+  // 새 먼저
+  let best=null, bd=11;
+  for(const b of birds){ if(b.state==='flee') continue; const d=Math.hypot(b.x-x,b.y-y); if(d<bd){bd=d;best=b;} }
+  if(best){ flee(best,true); updHud(); return; }
+  if(cat && cat.state!=='leave' && x>cat.x-13 && x<cat.x+13 && y>cat.y-17 && y<cat.y+4){ tapCat(); updHud(); return; }
+  const i=treeAt(x,y); if(i>=0){ tapTree(i); updHud(); }
+});
+
+// ================= 렌더 =================
+function soil(x,y,wet,locked){
+  const ws=[7,10,12,12,10,7];
+  for(let k=0;k<ws.length;k++){ const w=ws[k], yy=y-2+k;
+    ctx.fillStyle = locked?'#b9a58a':'#5e3a26'; ctx.fillRect(x-w-1,yy,w*2+2,1);
+    ctx.fillStyle = locked?'#d8c6a8': (wet?'#7a4a2e':'#a86f42'); ctx.fillRect(x-w,yy,w*2,1); }
+  ctx.fillStyle = locked?'#b9a58a':'#5e3a26'; ctx.fillRect(x-7,y-3,14,1); ctx.fillRect(x-7,y+4,14,1);
+  if(!locked && !wet){ ctx.fillStyle='#c78a56'; ctx.fillRect(x-6,y,2,1); ctx.fillRect(x+3,y+1,3,1); }
+}
+function drawNum(n,x,y){ const s=String(n); let cx=x-Math.floor((s.length*4-1)/2); for(const ch of s){ ctx.drawImage(digits[ch],cx,y); cx+=4; } }
+function bubble(x,y,icon,t){
+  const bob=Math.round(Math.sin(t*4+x)*1.2), bx=x, by=y+bob;
+  ctx.fillStyle='#7a4a3a'; ctx.fillRect(bx-6,by-5,13,11); ctx.fillRect(bx-5,by-6,11,13);
+  ctx.fillStyle='#fffaf3'; ctx.fillRect(bx-5,by-5,11,11);
+  ctx.fillStyle='#7a4a3a'; ctx.fillRect(bx-2,by+7,3,1); ctx.fillRect(bx-1,by+8,1,1);
+  ctx.fillStyle='#fffaf3'; ctx.fillRect(bx-1,by+6,1,1);
+  ctx.drawImage(icon, bx-Math.floor(icon.width/2), by-Math.floor(icon.height/2));
+}
+function drawTreeSlot(i,t,time){
+  const [x,y]=TREE_POS[i], tr=S.trees[i];
+  if(!tr.u){
+    soil(x,y,false,true);
+    const next=S.trees.findIndex(t=>!t.u);
+    if(i===next){
+      ctx.fillStyle='#7a4a3a'; ctx.fillRect(x-1,y-14,2,12);
+      ctx.fillRect(x-12,y-23,24,11); ctx.fillStyle='#f6dcb4'; ctx.fillRect(x-11,y-22,22,9);
+      ctx.drawImage(icCoin,x-10,y-21); drawNum(SLOT_COST[i],x+4,y-20);
+    } else {
+      ctx.fillStyle='#a08870'; ctx.fillRect(x-1,y-3,3,1); ctx.fillRect(x,y-4,1,3);
+    }
+    return;
+  }
+  soil(x,y,tr.water>40,false);
+  if(S.up.spr>0){ ctx.fillStyle='#6b7a86'; ctx.fillRect(x+14,y-6,2,8); ctx.fillStyle='#5aaef0'; ctx.fillRect(x+13,y-8,4,2);
+    if(Math.floor(time*2+i)%6===0){ ctx.fillStyle='#bfe6ff'; ctx.fillRect(x+11,y-10,1,1); ctx.fillRect(x+18,y-10,1,1); ctx.fillRect(x+15,y-11,1,1);} }
+  let sx=0;
+  if(tr.shake>0){ tr.shake-=1/60; sx=Math.round(Math.sin(tr.shake*40)*1.5); }
+  const dry = tr.water<15, messy = tr.stage>=1 && tr.prune>=50;
+  ctx.drawImage(treeImg(tr.stage,dry,messy), x-24+sx, y-48);
+  if(tr.stage===4){
+    for(let k=0;k<tr.fruit && k<FRUIT_POS.length;k++){
+      const [fx_,fy]=FRUIT_POS[k]; ctx.drawImage(k===0&&tr.golden?fruitG:fruitS, x+fx_-2+sx, y+fy-2);
+    }
+  }
+}
+function drawCat(t){
+  if(!cat) return;
+  const moving = cat.state==='enter'||cat.state==='dash'||cat.state==='leave';
+  let img;
+  if(moving) img = (Math.floor(cat.a*(cat.state==='enter'?6:12))%2?CAT.A:CAT.B)[cat.dir];
+  else if(cat.state==='sleep') img=CAT.sleep[cat.dir];
+  else img=CAT.sit[cat.dir];
+  let hy = cat.state==='dash' ? -Math.round(Math.abs(Math.sin(cat.hop*14))*3) : 0;
+  if(cat.state==='sleep') hy = Math.floor(t*1.5)%2 ? 0 : -0; // 숨쉬기
+  ctx.fillStyle='rgba(60,90,40,.35)'; ctx.fillRect(Math.round(cat.x)-7,Math.round(cat.y)-1,14,2);
+  ctx.drawImage(img, Math.round(cat.x)-8, Math.round(cat.y)-img.height+hy);
+  if(cat.state==='sleep'){ const p=(t%2)/2; ctx.globalAlpha=1-p; ctx.drawImage(zzz, Math.round(cat.x)+(cat.dir?-10:6), Math.round(cat.y)-14-Math.round(p*6)); ctx.globalAlpha=1; }
+  if(cat.state==='pause' || cat.state==='dash'){ // 남은 탭 표시
+    for(let k=0;k<3-cat.taps;k++){ ctx.drawImage(icHeart, Math.round(cat.x)-8+k*6, Math.round(cat.y)-17); }
+  }
+}
+function drawBird(b){
+  const flap = b.state==='fly'||b.state==='flee' ? (Math.floor(b.a*12)%2?BIRD.up:BIRD.dn) : (b.state==='peck' && Math.floor(b.a*3)%3===0 ? BIRD.up : BIRD.dn);
+  const hop = b.state==='peck' ? (Math.floor(b.a*4)%4===0?-1:0) : 0;
+  ctx.drawImage(flap[b.dir], Math.round(b.x)-4, Math.round(b.y)-5+hop);
+}
+function render(t){
+  drawBG(t);
+  const ents=[];
+  for(let i=0;i<6;i++) ents.push({y:TREE_POS[i][1], d:()=>drawTreeSlot(i,S.trees[i],t)});
+  if(S.up.scare>0) ents.push({y:136, d:()=>ctx.drawImage(scarecrow,75,121)});
+  if(cat) ents.push({y:cat.y, d:()=>drawCat(t)});
+  ents.sort((a,b)=>a.y-b.y).forEach(e=>e.d());
+  for(let i=0;i<6;i++){
+    const tr=S.trees[i]; if(!tr.u) continue; const [x,y]=TREE_POS[i];
+    const top = tr.stage===0 ? y-20 : tr.stage===1 ? y-32 : y-44;
+    let icon=null;
+    if(tr.stage===4 && tr.fruit>0) icon = tr.golden?icGold:icPeach;
+    else if(tr.water<35) icon=icDrop;
+    else if(tr.stage>=1 && tr.prune>=50) icon=icScis;
+    if(icon) bubble(x+11, top, icon, t);
+  }
+  for(const b of birds) drawBird(b);
+  for(const p of parts){
+    if(p.img){ ctx.globalAlpha=Math.min(1,p.life*2); ctx.drawImage(p.img,Math.round(p.x)-2,Math.round(p.y)-2); ctx.globalAlpha=1; }
+    else { ctx.fillStyle=p.col; ctx.fillRect(Math.round(p.x),Math.round(p.y),p.s,p.s); }
+  }
+  const ph=skyPhase();
+  if(ph==='night'){
+    ctx.fillStyle='rgba(30,30,90,.32)'; ctx.fillRect(0,40,W,H-40);
+    for(const f of fireflies){ f.p+=0.016; f.x+=Math.sin(f.p*0.7)*0.2; f.y+=Math.cos(f.p*0.9)*0.15;
+      if(Math.sin(f.p*2)>0){ ctx.fillStyle='#fff59a'; ctx.fillRect(Math.round(f.x),Math.round(f.y),1,1); ctx.fillStyle='rgba(255,245,150,.35)'; ctx.fillRect(Math.round(f.x)-1,Math.round(f.y)-1,3,3);} }
+  } else if(ph==='dusk'){ ctx.fillStyle='rgba(255,120,60,.10)'; ctx.fillRect(0,40,W,H-40); }
+}
+
+// ================= HUD & 메뉴 =================
+const $=id=>document.getElementById(id);
+$('icCoin').src=asURL(icCoin); $('icPeach').src=asURL(icPeach); $('icGold').src=asURL(icGold);
+$('icShop').src=asURL(icShop); $('icJumak').src=asURL(icLantern); $('icReal').src=asURL(icBox,3); $('icSell').src=asURL(icCoin); $('icInfo').src=asURL(icBook);
+function updHud(){
+  $('coins').textContent=S.coins; $('peaches').textContent=S.peaches; $('golds').textContent=S.gold;
+  $('goldStat').hidden = S.gold<=0 && S.stats.gold<=0;
+  $('icSound').src = asURL(S.muted?icMute:icNote);
+}
+function updClock(){ const d=new Date(), ph={dawn:'새벽',day:'낮',dusk:'노을',night:'밤'}[skyPhase()];
+  $('clock').textContent = `${ph} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+
+function openModal(title, html){ $('mTitle').textContent=title; $('mBody').innerHTML=html; $('modal').hidden=false; }
+function closeModal(){ $('modal').hidden=true; }
+$('mClose').onclick=closeModal;
+$('modal').addEventListener('pointerdown',e=>{ if(e.target.id==='modal') closeModal(); });
+
+function sellAll(){
+  const v = S.peaches*PEACH_PRICE + S.gold*GOLD_PRICE;
+  if(v<=0){ toast('팔 복숭아가 없어요. 익은 나무를 톡 눌러 수확해요'); sfx('no'); return 0; }
+  S.coins+=v; S.peaches=0; S.gold=0; sfx('coin'); floatText(W/2,H/2,'+'+v+' 코인','gold'); save(); updHud(); return v;
+}
+const upIcons = {spr:asURL(icDrop), scare:asURL(scarecrow), fert:asURL(icSprout)};
+function renderShop(){
+  const coin=`<img src="${asURL(icCoin)}" alt="">`;
+  const v = S.peaches*PEACH_PRICE + S.gold*GOLD_PRICE;
+  let h = `<div class="row"><img src="${asURL(icPeach)}" alt=""><div class="t"><b>복숭아 팔기</b>
+    <small>복숭아 ${S.peaches}개 × ${PEACH_PRICE}${S.gold?`, 황금 ${S.gold}개 × ${GOLD_PRICE}`:''}</small></div>
+    <button class="btn" data-a="sell" ${v?'':'disabled'}>${coin}${v}</button></div>`;
+  const next=S.trees.findIndex(t=>!t.u);
+  h += `<div class="row"><img src="${asURL(treeImg(4,false,false))}" alt="" style="object-fit:contain"><div class="t"><b>나무 자리 늘리기</b>
+    <small>${next<0?'모든 자리에 나무가 있어요':`복숭아나무 ${next+1}번째 그루`}</small></div>
+    ${next<0?'':`<button class="btn" data-a="slot" ${S.coins>=SLOT_COST[next]?'':'disabled'}>${coin}${SLOT_COST[next]}</button>`}</div>`;
+  for(const k in UPGRADES){
+    const u=UPGRADES[k], lv=S.up[k], max=lv>=u.cost.length;
+    h += `<div class="row"><img src="${upIcons[k]}" alt=""><div class="t"><b>${u.name}</b> <span class="lv">Lv ${lv}/${u.cost.length}</span>
+      <small>${u.desc}</small></div>
+      ${max?'<span class="lv">최대</span>':`<button class="btn" data-a="up" data-k="${k}" ${S.coins>=u.cost[lv]?'':'disabled'}>${coin}${u.cost[lv]}</button>`}</div>`;
+  }
+  openModal('상점 (코인 '+S.coins+')', h);
+  $('mBody').querySelectorAll('button[data-a]').forEach(b=>b.onclick=()=>{
+    const a=b.dataset.a;
+    if(a==='sell') sellAll();
+    else if(a==='slot'){ const n=S.trees.findIndex(t=>!t.u); if(n>=0&&S.coins>=SLOT_COST[n]){ S.coins-=SLOT_COST[n]; S.trees[n]=newTree(true); sfx('buy'); toast('새 복숭아나무를 심었어요'); } }
+    else if(a==='up'){ const k=b.dataset.k, c=UPGRADES[k].cost[S.up[k]]; if(S.coins>=c){ S.coins-=c; S.up[k]++; sfx('buy'); toast(UPGRADES[k].name+' 레벨업!'); } }
+    save(); updHud(); renderShop();
+  });
+}
+function renderInfo(){
+  const st=S.stats, trees=S.trees.filter(t=>t.u);
+  const list = trees.map((t,i)=>`${i+1}번 나무: ${STAGE_NAME[t.stage]}${t.stage<4?` ${Math.floor(t.growth)}%`:` (${t.fruit}개)`}, 물 ${Math.round(t.water)}%`).join('<br>');
+  openModal('농장 기록', `<div class="help">
+    <p>수확한 복숭아 <b>${st.harvest}</b>개, 황금 복숭아 <b>${st.gold}</b>개<br>
+    쫓아낸 고양이 <b>${st.cats}</b>마리, 쫓아낸 새 <b>${st.birds}</b>마리<br>
+    물 준 횟수 <b>${st.water}</b>, 가지치기 <b>${st.prune}</b></p>
+    <p style="opacity:.8">${list}</p>
+    <p><button class="btn" id="hHelp" style="display:inline-flex;flex-direction:row">도움말 보기</button>
+    <button class="btn danger" id="hReset" style="display:inline-flex;flex-direction:row;margin-left:6px">처음부터</button></p></div>`);
+  $('hHelp').onclick=showHelp;
+  let armed=false;
+  $('hReset').onclick=e=>{ if(!armed){ armed=true; e.target.textContent='정말요? 한 번 더'; return; }
+    S=newState(); S.seenHelp=true; birds=[]; cat=null; save(); updHud(); closeModal(); toast('새 농장을 시작했어요'); };
+}
+function showHelp(){
+  openModal('복숭아 농장 안내', `<div class="help">
+    <p>나무를 <b>톡</b> 누르면 그때 필요한 일을 해요.</p>
+    <p>💧 말풍선 → 물 주기<br>✂ 말풍선 → 가지치기 (가지가 무성하면 천천히 자라요)<br>🍑 말풍선 → 수확하기</p>
+    <p>할 일이 없을 땐 쓰담쓰담 하면 조금 더 자라요.</p>
+    <p>흰 바탕에 노란 얼룩 고양이가 나무 옆에서 낮잠을 자면 그 나무가 안 자라요. 세 번 톡톡 눌러 쫓아내세요. 도망 다니니까 잘 따라가야 해요.</p>
+    <p>새는 익은 복숭아를 쪼아 먹어요. 눌러서 쫓아내세요.</p>
+    <p>모은 코인으로 이가네 주막에서 막걸리, 파전, 새우구이, 바베큐를 먹으면 농사에 도움이 되는 효과가 생겨요.</p>
+    <p>앱을 꺼 둬도 나무는 계속 자라요. 물이 마르면 성장이 멈추니 가끔 들러 주세요.</p>
+    <p><button class="btn" id="hOk" style="display:inline-flex;flex-direction:row">시작하기</button></p></div>`);
+  $('hOk').onclick=()=>{ S.seenHelp=true; save(); closeModal(); };
+}
+$('bShop').onclick=renderShop;
+$('bSell').onclick=()=>sellAll();
+$('bInfo').onclick=renderInfo;
+$('bJumak').onclick=renderJumak;
+$('bReal').onclick=renderReal;
+
+// ================= 이가네 주막 =================
+function minsLeft(ts){ return Math.max(0, Math.ceil((ts-Date.now())/60000)); }
+function renderBuffs(){
+  const el=$('buffs'); let h='';
+  if(Date.now()<S.buff.grow) h+=`<span class="buff"><img src="${asURL(FOOD.bbq,2)}" alt="">성장↑ ${minsLeft(S.buff.grow)}분</span>`;
+  if(Date.now()<S.buff.gold) h+=`<span class="buff"><img src="${asURL(FOOD.makgeolli,2)}" alt="">황금↑ ${minsLeft(S.buff.gold)}분</span>`;
+  if(S.buff.bonus>0) h+=`<span class="buff"><img src="${asURL(FOOD.shrimp,2)}" alt="">수확+2 ${S.buff.bonus}번</span>`;
+  if(el.innerHTML!==h){ el.innerHTML=h; fit(); }
+}
+function renderJumak(){
+  const coin=`<img src="${asURL(icCoin)}" alt="">`;
+  const st=S.jumak.stamps%10;
+  let h=`<div class="jumak-head"><img src="${asURL(jumakHouse)}" alt=""><div>
+    <div>어서 오시게! 농사일에 고생 많았지?</div>
+    <small style="opacity:.75">단골 도장 ${st}/10 (다 모으면 서비스 30코인)</small>
+    <div class="stamps">${Array.from({length:10},(_,i)=>`<i class="${i<st?'on':''}"></i>`).join('')}</div></div></div>`;
+  for(const m of MENU){
+    h+=`<div class="row"><img src="${asURL(FOOD[m.id])}" alt="" style="object-fit:contain"><div class="t"><b>${m.name}</b>
+      <small>${m.desc}</small></div>
+      <button class="btn" data-m="${m.id}" ${S.coins>=m.price?'':'disabled'}>${coin}${m.price}</button></div>`;
+  }
+  openModal('이가네 주막 (코인 '+S.coins+')', h);
+  $('mBody').querySelectorAll('button[data-m]').forEach(b=>b.onclick=()=>eat(b.dataset.m));
+}
+function eat(id){
+  const m=MENU.find(x=>x.id===id); if(!m || S.coins<m.price){ sfx('no'); return; }
+  S.coins-=m.price;
+  const now=Date.now();
+  if(id==='makgeolli') S.buff.gold = Math.max(now,S.buff.gold) + 30*60000;
+  if(id==='bbq') S.buff.grow = Math.max(now,S.buff.grow) + 60*60000;
+  if(id==='shrimp') S.buff.bonus += 3;
+  if(id==='pajeon') S.trees.forEach((t,i)=>{ if(t.u){ t.water=100; burst(TREE_POS[i][0],TREE_POS[i][1],'water',8);} });
+  S.jumak.stamps++; S.jumak.eaten[id]=(S.jumak.eaten[id]||0)+1;
+  let service='';
+  if(S.jumak.stamps%10===0){ S.coins+=30; service='<p>단골 도장을 다 모았어요! 사장님이 30코인을 챙겨 주셨어요.</p>'; }
+  sfx('harvest'); buzz(15); save(); updHud(); renderBuffs();
+  openModal('이가네 주막', `<div class="eat"><img src="${asURL(FOOD[id],8)}" alt="${m.name}">
+    <p style="font-size:15px;margin:14px 0 4px">냠냠, ${m.name} 맛있다!</p><p style="opacity:.8;margin:0 0 6px">${m.say}</p>${service}
+    <button class="btn wide" id="eatBack">한 접시 더 보기</button></div>`);
+  $('eatBack').onclick=renderJumak;
+}
+
+// ================= 진짜 복숭아 =================
+function renderReal(){
+  const F=REAL_FARM;
+  openModal(F.name, `<div class="farm-hero"><img src="${asURL(icBox,6)}" alt=""></div>
+    <p style="margin:0 0 4px">${F.intro}</p>
+    <button class="btn wide pink" id="rBuy"><img src="${asURL(icPeach)}" alt="">복숭아 구매하러 가기</button>
+    <div class="notice" id="rSoon" hidden>${F.comingSoon}</div>
+    <button class="btn wide" id="rWater"><img src="${asURL(icCup)}" alt="">농부에게 냉수 한잔</button>
+    <div class="notice" id="rAcct" hidden>
+      <div style="opacity:.8">${F.bank} (예금주 ${F.holder})</div>
+      <div class="acct"><code id="acctNo">${F.account}</code><button class="btn" id="rCopy" style="flex-direction:row">복사</button></div>
+      <div style="opacity:.8;margin-top:6px">${F.thanks}</div>
+    </div>`);
+  $('rBuy').onclick=()=>{
+    if(F.shopUrl){ window.open(F.shopUrl,'_blank','noopener'); return; }
+    $('rSoon').hidden=false; sfx('pet');
+  };
+  $('rWater').onclick=()=>{ $('rAcct').hidden=!$('rAcct').hidden; sfx('water'); };
+  $('rCopy').onclick=()=>copyText(F.account.replace(/\s/g,''), `${F.bank} 계좌번호를 복사했어요`);
+}
+function copyText(text,msg){
+  const done=()=>{ toast(msg); sfx('coin'); };
+  const fallback=()=>{ const ta=document.createElement('textarea'); ta.value=text; ta.setAttribute('readonly','');
+    ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0,999);
+    let ok=false; try{ ok=document.execCommand('copy') }catch(e){} ta.remove(); ok?done():toast('복사가 안 되면 번호를 길게 눌러 복사해 주세요'); };
+  if(navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done,fallback); else fallback();
+}
+$('bSound').onclick=()=>{ S.muted=!S.muted; updHud(); save(); if(!S.muted) sfx('pet'); };
+
+// ================= 메인 루프 =================
+let lastWall=Date.now(), saveT=0, clockT=0;
+function update(dt){
+  simNow = Date.now(); growTrees(dt, catTree());
+  birdTimer-=dt; if(birdTimer<=0){ spawnBirds(); birdTimer=rand(45,90)*(1+0.6*S.up.scare); }
+  catTimer-=dt; if(catTimer<=0){ if(!cat) spawnCat(); catTimer=rand(90,180); }
+  updateBirds(dt); updateCat(dt);
+  for(const p of parts){ p.life-=dt; p.vy+=p.g*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; }
+  parts=parts.filter(p=>p.life>0);
+  saveT+=dt; if(saveT>5){ saveT=0; save(); }
+  clockT+=dt; if(clockT>1){ clockT=0; updClock(); updHud(); renderBuffs(); }
+}
+function welcomeBack(sec){
+  const r=simulate(sec);
+  if(sec>120){
+    const m=Math.round(sec/60), tm = m>=60?`${Math.floor(m/60)}시간 ${m%60}분`:`${m}분`;
+    let msg=`${tm} 동안 농장이 자랐어요.`;
+    if(r.ripe>0) msg+=` 익은 나무 ${r.ripe}그루!`;
+    if(r.thirsty>0) msg+=` 목마른 나무 ${r.thirsty}그루`;
+    toast(msg,3600);
+  }
+}
+function frame(){
+  const now=Date.now(); let dt=(now-lastWall)/1000; lastWall=now;
+  if(dt>2){ welcomeBack(dt); dt=0; }
+  update(Math.min(dt,0.1));
+  render(now/1000);
+  requestAnimationFrame(frame);
+}
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) save(); });
+addEventListener('pagehide',save);
+
+// 시작
+welcomeBack((Date.now()-S.last)/1000);
+fit(); updHud(); updClock();
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+if(!S.seenHelp) showHelp();
+requestAnimationFrame(frame);
+if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
+window.__peach = {S:()=>S, cat:()=>cat, birds:()=>birds, spawnCat:()=>{ if(!cat) spawnCat(); }, spawnBirds, ripe:()=>{ S.trees.forEach(t=>{ if(t.u){t.stage=3;advance(t);} }); }};
+</script>
+</body>
+</html>
