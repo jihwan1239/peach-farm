@@ -1,0 +1,47 @@
+plugins {
+    id 'com.android.application'
+}
+
+// 앱이 여는 주소. GitHub Actions에서 저장소 이름으로 자동으로 채워져요.
+def siteUrl = project.findProperty('siteUrl') ?: 'https://jihwan1239.github.io/peach-farm/'
+def vCode = (project.findProperty('versionCode') ?: '1') as Integer
+
+android {
+    namespace 'com.igane.peach'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.igane.peach'
+        minSdk 24
+        targetSdk 34
+        versionCode vCode
+        versionName "1.0.${vCode}"
+        resValue 'string', 'site_url', siteUrl
+    }
+
+    signingConfigs {
+        release {
+            storeFile file('peach.keystore')
+            storePassword 'igane-peach'
+            keyAlias 'peach'
+            keyPassword 'igane-peach'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}
