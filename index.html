@@ -341,6 +341,32 @@ const TREE_LV = [
 ];
 const HONEY_HOURS = 2, HONEY_COINS = 25;
 
+// ===== 작은 목장 (농장 레벨 9부터, 밭 오른쪽 끝) =====
+const RANCH = {
+  name:'작은 목장', cost:1500, lv:9,
+  henCost:[0,0,120,180,260,360],     // 닭. 처음 두 마리는 목장을 열면 같이 와요
+  rabbitCost:[200,280,380,500],      // 토끼 (농장 레벨 10부터)
+  eggMin:20,                         // 닭 한 마리가 달걀을 낳는 시간(분)
+  eggCoins:6, goldEggCoins:40, goldEggChance:0.05,
+  feedCost:20, feedHours:4,          // 모이통을 한 번 채우면 닭 4마리가 4시간 먹어요
+  carrotCost:15, carrotHours:3,      // 당근 상자를 한 번 채우면 3시간 동안 배불러요
+  cloverMin:40,                      // 배부른 토끼 한 마리가 네잎클로버를 찾아 오는 시간(분)
+  cloverCoins:10, cloverLuckMin:20,  // 클로버를 주우면 코인과 함께 20분 동안 황금 복숭아가 잘 열려요
+  maxEggs:12,
+};
+// 목장 꾸미기 하나마다 달걀이 6%씩 빨리 모여요
+const RANCH_DECOS = [
+  {id:'hay',       name:'건초더미',   price:80,  desc:'폭신폭신, 닭들이 올라가 놀아요'},
+  {id:'trough',    name:'물통',       price:100, desc:'시원한 물을 마시고 기운이 나요'},
+  {id:'sunflower', name:'해바라기',   price:120, desc:'목장 옆에 해바라기가 쭉 피어요'},
+  {id:'burrow',    name:'토끼굴 언덕', price:150, desc:'토끼들이 숨바꼭질을 해요'},
+  {id:'windmill',  name:'풍차',       price:300, lv:11, desc:'바람 따라 날개가 빙글빙글'},
+];
+
+// ===== 쥐와 뱀 (농장 레벨 5부터) =====
+// 쥐는 한 번, 뱀은 세 번 눌러 쫓아요. 친한 고양이(호감도 50)는 쥐를, 단짝 고양이(80)는 뱀도 쫓아 줘요.
+const PESTS = {mouseEvery:[110,220], snakeEvery:[280,560], mouseCoins:3, snakeCoins:8, snakeTaps:3};
+
 // ===== 농장 레벨 =====
 // 수확한 복숭아 1개 = 경험치 1. 의뢰, 오늘의 할 일, 놀이로도 경험치를 얻어요.
 const XP_NEED = L => Math.round(100*Math.pow(L,1.6));  // L레벨에서 다음 레벨까지 필요한 경험치 (숫자를 키우면 더 천천히 올라요)
@@ -353,6 +379,7 @@ const UNLOCKS = [
   {lv:4,  key:'field2',   text:'개울가 밭 개척'},
   {lv:4,  key:'v_giwa',   text:'마을에 기와집이 생겨요'},
   {lv:5,  key:'bee',      text:'상점에 꿀벌통 등장'},
+  {lv:5,  key:'pests',    text:'쥐와 뱀이 가끔 나타나요 (친한 고양이가 도와줘요)'},
   {lv:6,  key:'peddler',  text:'깜짝 손님: 떠돌이 행상'},
   {lv:6,  key:'d_stone',  text:'꾸미기: 돌탑'},
   {lv:6,  key:'v_mill',   text:'마을에 물레방아가 돌아요'},
@@ -360,6 +387,9 @@ const UNLOCKS = [
   {lv:8,  key:'field3',   text:'언덕 밭 개척'},
   {lv:8,  key:'v_market', text:'마을에 장터가 열려요'},
   {lv:9,  key:'quest4',   text:'오늘의 할 일 4개'},
+  {lv:9,  key:'ranch',    text:'작은 목장 (밭 오른쪽 끝, 닭 키우기와 목장 꾸미기)'},
+  {lv:10, key:'rabbit',   text:'목장에 토끼 입양'},
+  {lv:11, key:'r_mill',   text:'목장 꾸미기: 풍차'},
   {lv:10, key:'goldmini', text:'복숭아 받기에 황금 복숭아 등장'},
   {lv:10, key:'v_school', text:'마을에 학교가 생겨요'},
   {lv:12, key:'v_tree',   text:'마을 어귀에 큰 느티나무'},
@@ -379,6 +409,8 @@ const QUESTS = [
   {id:'sell',    text:'복숭아 {n}번 팔기',             n:[1,2],   stat:()=>S.stats.sells||0},
   {id:'churu',   text:'고양이에게 츄르 {n}번 주기',    n:[1,1],   stat:()=>S.cat.fed||0},
   {id:'mini',    text:'복숭아 받기 {n}판 하기',        n:[1,2],   stat:()=>S.stats.mini||0, lv:2},
+  {id:'pests',   text:'쥐나 뱀 {n}마리 쫓기',          n:[1,2],   stat:()=>(S.stats.mice||0)+(S.stats.snakes||0), lv:5},
+  {id:'eggs',    text:'달걀 {n}개 줍기',               n:[4,8],   stat:()=>S.stats.eggs||0, need:()=>S.ranch.open},
 ];
 const QUEST_COINS = 15, CHEST_COINS = 60;
 
@@ -458,8 +490,9 @@ function normalize(S){
   S.up.bee = S.up.bee||0; S.honeyAt = S.honeyAt||0; S.evtSeen = S.evtSeen||{}; S.coupon = S.coupon||{};
   if(S.xp===undefined){ S.xp = (S.stats.harvest||0) + (S.stats.orders||0)*15 + (S.stats.bugs||0); S.lvSeen = levelOf(S.xp).lv; }
   S.lvSeen = S.lvSeen || 1; S.mini = S.mini || {day:'', plays:0, best:0};
-  S.fields = S.fields || 1; S.curField = Math.min(S.curField||0, S.fields);
+  S.fields = S.fields || 1; S.curField = S.curField===FIELDS.length ? S.curField : Math.min(S.curField||0, S.fields);
   S.diarySeen = S.diarySeen || ''; S.shopNotice = S.shopNotice || '';
+  S.ranch = Object.assign({open:false, hens:0, rabbits:0, feed:0, carrot:0, eggs:[], clovers:[], deco:{}, eggT:0, cloverT:0}, S.ranch||{});
   return S;
 }
 normalize(S);
@@ -910,6 +943,9 @@ function sfx(kind){
     else if(kind==='pet'){ tone(600,0,.08,'sine',.05,750); }
     else if(kind==='buy'){ [523,659,784,1046].forEach((f,i)=>tone(f,i*.06,.1,'square',.035)); }
     else if(kind==='no'){ tone(220,0,.12,'square',.04,180); }
+    else if(kind==='squeak'){ tone(1900,0,.05,'square',.025,2500); tone(2100,.08,.05,'square',.025,2700); }
+    else if(kind==='cluck'){ tone(520,0,.06,'square',.035,400); tone(600,.09,.08,'square',.035,430); }
+    else if(kind==='hiss'){ tone(3000,0,.25,'sawtooth',.012,2600); }
   }catch(e){}
 }
 
@@ -1034,7 +1070,7 @@ function gainXP(n){
 const questsN = ()=> unlocked('quest4') ? 4 : 3;
 function ensureDaily(){
   const d=todayKey(); if(S.daily && S.daily.day===d) return;
-  const pool=QUESTS.filter(q=>!q.lv || farmLv()>=q.lv).sort(()=>Math.random()-0.5);
+  const pool=QUESTS.filter(q=>(!q.lv || farmLv()>=q.lv) && (!q.need || q.need())).sort(()=>Math.random()-0.5);
   S.daily={day:d, chest:false, quests:pool.slice(0,questsN()).map(q=>({id:q.id, n:irand(q.n[0],q.n[1]), base:q.stat(), done:false}))};
   save();
 }
@@ -1077,7 +1113,7 @@ function simulate(sec){
   sec=Math.min(sec, 3*86400);
   let ripeBefore=S.trees.filter(t=>t.u&&t.stage===4).length;
   simNow = Date.now() - sec*1000;
-  while(sec>0){ const st=Math.min(30,sec); growTrees(st,-1); sec-=st; simNow += st*1000; }
+  while(sec>0){ const st=Math.min(30,sec); growTrees(st,-1); ranchTick(st,false); sec-=st; simNow += st*1000; }
   simNow = Date.now();
   return {ripe:S.trees.filter(t=>t.u&&t.stage===4).length - ripeBefore,
           thirsty:S.trees.filter(t=>t.u&&t.water<35).length};
@@ -1106,7 +1142,7 @@ function discover(id,n){
 // ================= 이벤트: 새 & 고양이 =================
 let birds=[], cat=null, birdTimer=rand(25,45), catTimer=rand(50,90);
 let curField = 0;
-const fieldTrees = f => [0,1,2,3,4,5].map(k=>f*6+k);
+const fieldTrees = f => f>=FIELDS.length ? [] : [0,1,2,3,4,5].map(k=>f*6+k);
 function ripeTrees(){ return fieldTrees(curField).filter(i=>{ const t=S.trees[i]; return t.u&&t.stage===4&&t.fruit>0&&!t.bag; }); }
 function spawnBirds(){
   const ripe=ripeTrees();
@@ -1373,7 +1409,7 @@ function endCatPlay(aborted){
 }
 
 // ================= 오늘의 농장 (할 일, 놀이, 레벨) =================
-const QICON = ()=>({harvest:icPeach, water:icDrop, prune:icScis, bugs:icBug, bags:icBagI, birds:BIRD.dn[0], orders:icBook, jumak:icLantern, sell:icCoin, churu:icChuru, mini:icBasket});
+const QICON = ()=>({harvest:icPeach, water:icDrop, prune:icScis, bugs:icBug, bags:icBagI, birds:BIRD.dn[0], orders:icBook, jumak:icLantern, sell:icCoin, churu:icChuru, mini:icBasket, eggs:icEgg, pests:icMouseI});
 function openHub(tab){
   ensureDaily(); tab=tab||'quest';
   let h=tabs([['quest','오늘의 할 일'],['play','놀이'],['lv','농장 레벨']], tab, 'tab');
@@ -1440,7 +1476,8 @@ async function shareFarm(){
   const found=DEX_VARS.filter(v=>S.dex[v.id]).length, planted=S.trees.filter(t=>t.u).length;
   let y=top+H*sc+44; g.fillStyle='#5a3428'; g.font=`19px ${F}`;
   g.fillText(`복숭아 ${S.stats.harvest}개 수확   도감 ${found}/${DEX_VARS.length}   나무 ${planted}그루`, cw/2, y); y+=32;
-  g.fillText(S.cat.name ? `고양이 ${S.cat.name}와 함께 농사짓고 있어요` : `고양이 호감도 ${S.cat.aff}`, cw/2, y); y+=36;
+  const zoo = S.ranch.open ? `, 닭 ${S.ranch.hens}마리${S.ranch.rabbits?`, 토끼 ${S.ranch.rabbits}마리`:''}` : '';
+  g.fillText(S.cat.name ? `고양이 ${S.cat.name}${zoo}와 함께 농사짓고 있어요` : `고양이 호감도 ${S.cat.aff}${zoo}`, cw/2, y); y+=36;
   const url = location.protocol.startsWith('http') ? location.href.split('#')[0].split('?')[0] : '';
   g.font=`15px ${F}`; g.fillStyle='#9a6a5a'; g.fillText(url ? url.replace(/^https?:\/\//,'') : '이가네 복숭아에서 만나요!', cw/2, y);
   const blob=await new Promise(r=>c.toBlob(r,'image/png'));
@@ -1707,6 +1744,7 @@ function updateCat(dt){
     const b=birds.find(b=>b.state==='peck');
     if(b){ cat.prey=b; cat.state='hunt'; cat.tx=clamp(b.x,14,146); cat.ty=P(b.tree)[1]+4; }
   }
+  if(cat.state==='hunt' && cat.prey && cat.prey.kind){ const p=cat.prey; cat.tx=clamp(p.x+(cat.x<p.x?-9:9),6,154); cat.ty=clamp(p.y+1,60,250); }
   if(cat.state==='enter'){
     if(moveCat(dt,24)){ cat.state='sleep'; cat.timer=45; cat.dir = cat.x<P(cat.tree)[0]?0:1; }
   } else if(cat.state==='sleep'){
@@ -1734,7 +1772,9 @@ function updateCat(dt){
   } else if(cat.state==='hunt'){
     cat.a+=dt;
     if(moveCat(dt,70)){
-      const b=cat.prey; if(b && b.state!=='flee'){ flee(b,false); burst(b.x,b.y,'feather',5); floatText(cat.x,cat.y-18,'냥냥 펀치!','pink'); sfx('meow'); }
+      const b=cat.prey;
+      if(b && b.kind){ if(b.state!=='out'){ pestFlee(b,'cat'); S.stats.catGuard=(S.stats.catGuard||0)+1; burst(cat.x,cat.y-10,'heart',3); } }
+      else if(b && b.state!=='flee'){ flee(b,false); burst(b.x,b.y,'feather',5); floatText(cat.x,cat.y-18,'냥냥 펀치!','pink'); sfx('meow'); }
       cat.prey=null; cat.state='happy'; cat.timer=10;
     }
   } else if(cat.state==='leave'){
@@ -1766,8 +1806,8 @@ function catTree(){ return cat && cat.state==='sleep' && S.cat.aff<50 && !cat.fe
 const CAT_LV = [
   {min:0,  name:'낯선',  perk:''},
   {min:20, name:'아는',  perk:'이제 이름을 지어 줄 수 있어요 (수첩 > 고양이)'},
-  {min:50, name:'친한',  perk:'낮잠을 자도 나무를 방해하지 않고, 가끔 선물을 두고 가요'},
-  {min:80, name:'단짝',  perk:'새를 대신 쫓아 주고, 냥복숭아가 열리기 시작해요'}];
+  {min:50, name:'친한',  perk:'낮잠을 자도 나무를 방해하지 않고, 가끔 선물을 두고 가요. 쥐도 대신 쫓아 줘요'},
+  {min:80, name:'단짝',  perk:'새와 뱀도 대신 쫓아 주고, 냥복숭아가 열리기 시작해요'}];
 function catLevel(){ let i=0; CAT_LV.forEach((l,k)=>{ if(S.cat.aff>=l.min) i=k; }); return {i, ...CAT_LV[i]}; }
 function iga(s){ const c=s.charCodeAt(s.length-1); if(c<0xAC00||c>0xD7A3) return s+'(이)가'; return s+((c-0xAC00)%28?'이':'가'); }
 function catIga(){ return S.cat.name ? iga(S.cat.name) : '고양이가'; }
@@ -1784,6 +1824,398 @@ function feedCat(){
   sfx('meow'); buzz(15); floatText(cat.x,cat.y-18,'냠냠 츄르!','pink'); burst(cat.x,cat.y-10,'heart',4);
   const after=catLevel(); if(after.i>before) setTimeout(()=>toast(`고양이와 ${after.name} 사이가 됐어요! ${after.perk}`,4200),700);
   save(); updHud();
+}
+
+// ================= 작은 목장 =================
+const RANCH_F = FIELDS.length;                 // 밭 다음 칸이 목장이에요
+const isRanch = ()=> curField===RANCH_F;
+const maxPage = ()=> unlocked('ranch') ? RANCH_F : Math.min(S.fields, FIELDS.length-1);
+const PEN = {x0:32, x1:128, y0:116, y1:222};   // 동물이 돌아다니는 울타리 안
+const penPos = ()=> [rand(PEN.x0,PEN.x1), rand(PEN.y0,PEN.y1)];
+function outlined(rows, pal, oc='#5a3428'){
+  const b=spr(rows,pal), c=document.createElement('canvas'); c.width=b.width+2; c.height=b.height+2; const g=c.getContext('2d');
+  const sil=document.createElement('canvas'); sil.width=b.width; sil.height=b.height; const sg=sil.getContext('2d');
+  sg.drawImage(b,0,0); sg.globalCompositeOperation='source-in'; sg.fillStyle=oc; sg.fillRect(0,0,b.width,b.height);
+  for(const [ox,oy] of [[0,1],[2,1],[1,0],[1,2]]) g.drawImage(sil,ox,oy);
+  g.drawImage(b,1,1); return c;
+}
+const pair = c => [c, flip(c)];
+const HEN_PAL = {w:'#fffaf0', W:'#e6dccb', r:'#e8453c', y:'#ffb02e', k:'#2b2222', o:'#f0a020'};
+const HEN = {
+  a:pair(outlined(['.....rr..','....wwww.','....wwkwy','.w.wwwwwr','wwwwwwww.','wWWwwwww.','.wwwwww..','..o..o...'], HEN_PAL)),
+  b:pair(outlined(['.....rr..','....wwww.','....wwkwy','.w.wwwwwr','wwwwwwww.','wWWwwwww.','.wwwwww..','...o..o..'], HEN_PAL)),
+  peck:pair(outlined(['.........','.........','.w.......','wwwwww...','wwwwwwrr.','wWWwwwwww','.wwwwwwky','..o..o...'], HEN_PAL)),
+};
+const RAB_W = {w:'#fffaf5', p:'#ffb8c8', k:'#2b2222', n:'#ff8fa3', q:'#ffffff'};
+const RAB_B = {w:'#c89a6a', p:'#ffc4cf', k:'#2b2222', n:'#ff8fa3', q:'#fff6ec'};
+const RAB_ROWS = ['.....wp..','.....wp..','....wwww.','....wwkw.','.wwwwwwwn','qwwwwwww.','.wwwwwww.','..ww..ww.'];
+const RAB_HOP  = ['....wp...','....wp...','...wwww..','...wwkw..','.wwwwwwwn','qwwwwwww.','wwwwwww..','w.....ww.'];
+const RABBIT = [ {sit:pair(outlined(RAB_ROWS,RAB_W)), hop:pair(outlined(RAB_HOP,RAB_W))}, {sit:pair(outlined(RAB_ROWS,RAB_B)), hop:pair(outlined(RAB_HOP,RAB_B))} ];
+const MOUSE_PAL = {g:'#a3a8b0', p:'#ffb8c8', k:'#222222', n:'#ff7f95'};
+const MOUSE = {
+  a:pair(outlined(['......pp.','..ggggggg','pgggggkgn','..g...g..'], MOUSE_PAL, '#4a4a52')),
+  b:pair(outlined(['......pp.','..ggggggg','pgggggkgn','...g...g.'], MOUSE_PAL, '#4a4a52')),
+};
+const icEgg = outlined(['.w.','www','wWw','.w.'], {w:'#fffaf0', W:'#ece0cc'}, '#8a6a50');
+const icEggG = outlined(['.w.','www','wWw','.w.'], {w:'#ffd84a', W:'#e8a923'}, '#8a5a10');
+const icClover = outlined(['.gg.gg.','gGg.gGg','.ggdgg.','..ddd..','.ggdgg.','gGg.gGg','.gg.gg.'], {g:'#4caf50', G:'#a8e37f', d:'#2f7d32'}, '#2f5d34');
+const icGrain = spr(['..y..','.yYy.','yyYyy','.yYy.','..y..','..g..'], {y:'#f2c94c', Y:'#fff0a8', g:'#6cc35a'});
+const icCarrot = spr(['..g.g','...g.','..oo.','.oOo.','.oo..','oo...','o....'], {g:'#6cc35a', o:'#ff8a3a', O:'#ffc08a'});
+const icHenI = HEN.a[0], icRabbitI = RABBIT[0].sit[0], icMouseI = MOUSE.a[0];
+
+const ranchDecoCount = ()=> RANCH_DECOS.filter(d=>S.ranch.deco[d.id]).length;
+const eggSec = ()=> RANCH.eggMin*60*(1-0.06*ranchDecoCount());
+let ranchAn = [];
+function syncAnimals(){
+  const R=S.ranch, want={hen:R.open?R.hens:0, rabbit:R.open?R.rabbits:0};
+  for(const k of ['hen','rabbit']){
+    const have=ranchAn.filter(a=>a.kind===k);
+    while(have.length<want[k]){ const [x,y]=penPos(); const a={kind:k, x, y, tx:x, ty:y, t:rand(0,3), a:rand(0,6), dir:Math.random()<.5?0:1, hop:0, pet:0, col:have.length%2, peck:0}; ranchAn.push(a); have.push(a); }
+    while(have.length>want[k]){ const a=have.pop(); ranchAn=ranchAn.filter(o=>o!==a); }
+  }
+}
+function layEgg(live){
+  const R=S.ranch, hens=ranchAn.filter(a=>a.kind==='hen');
+  let x,y; if(live && hens.length){ const h=hens[irand(0,hens.length-1)]; x=clamp(h.x+(h.dir?5:-5),PEN.x0,PEN.x1); y=clamp(h.y,PEN.y0,PEN.y1); } else [x,y]=penPos();
+  const g = Math.random()<RANCH.goldEggChance;
+  R.eggs.push({x:Math.round(x), y:Math.round(y), g});
+  if(live && isRanch()){ floatText(x,y-12,'꼬꼬댁!',''); burst(x,y,'spark',4); sfx('cluck'); }
+}
+function ranchTick(dt, live){
+  const R=S.ranch; if(!R.open) return;
+  if(R.hens>0 && R.feed>0){
+    R.feed=Math.max(0, R.feed - dt*R.hens*100/(4*RANCH.feedHours*3600));
+    if(!snakeAtCoop()) R.eggT += dt*R.hens/eggSec();
+    while(R.eggT>=1){ R.eggT-=1; if(R.eggs.length<RANCH.maxEggs) layEgg(live); }
+  }
+  if(R.rabbits>0 && R.carrot>0){
+    R.carrot=Math.max(0, R.carrot - dt*100/(RANCH.carrotHours*3600));
+    R.cloverT += dt*R.rabbits/(RANCH.cloverMin*60);
+    while(R.cloverT>=1){ R.cloverT-=1; if(R.clovers.length<4){ const [x,y]=penPos(); R.clovers.push({x:Math.round(x), y:Math.round(y)});
+      if(live && isRanch()){ floatText(x,y-10,'깡총, 찾았다!','green'); burst(x,y,'spark',4); } } }
+  }
+}
+function updateAnimals(dt){
+  syncAnimals();
+  const scared = pests.some(p=>p.field===RANCH_F && p.kind==='snake' && p.state!=='out');
+  for(const a of ranchAn){
+    a.a+=dt; a.t-=dt; if(a.pet>0) a.pet-=dt; if(a.peck>0) a.peck-=dt;
+    if(a.t<=0){
+      if(scared && a.kind==='hen'){ [a.tx,a.ty]=penPos(); a.t=rand(.4,1); }
+      else if(Math.random()<.55){ [a.tx,a.ty]=penPos(); a.t=rand(3,7); }
+      else { a.t=rand(2,5); if(a.kind==='hen') a.peck=rand(.8,1.6); }
+    }
+    const dx=a.tx-a.x, dy=a.ty-a.y, d=Math.hypot(dx,dy), sp=(a.kind==='hen'?(scared?42:11):22)*dt;
+    a.moving = d>0.5;
+    if(a.moving){ if(Math.abs(dx)>0.3) a.dir=dx<0?1:0; if(d<=sp){ a.x=a.tx; a.y=a.ty; } else { a.x+=dx/d*sp; a.y+=dy/d*sp; } }
+    a.hop = a.kind==='rabbit' && a.moving ? a.hop+dt*8 : 0;
+  }
+}
+function openRanch(){
+  const R=S.ranch; if(R.open) return;
+  if(!unlocked('ranch')){ toast(`농장 레벨 ${RANCH.lv}부터 목장을 열 수 있어요`); sfx('no'); return; }
+  if(S.coins<RANCH.cost){ toast(`목장을 열려면 ${RANCH.cost}코인이 필요해요`); sfx('no'); return; }
+  S.coins-=RANCH.cost; R.open=true; R.hens=2; R.feed=100; R.eggT=0.5;
+  sfx('buy'); buzz(25); gainXP(30); syncAnimals(); ranchAn.forEach(a=>burst(a.x,a.y,'spark',6));
+  toast('작은 목장을 열었어요! 닭 두 마리가 이사 왔어요. 닭장을 누르면 목장을 관리할 수 있어요',4200);
+  save(); updHud(); updField();
+}
+function fillFeed(){
+  const R=S.ranch; if(!R.hens) return;
+  if(R.feed>=95){ floatText(78,206,'모이가 가득해요',''); return; }
+  if(S.coins<RANCH.feedCost){ toast(`모이는 ${RANCH.feedCost}코인이에요`); sfx('no'); return; }
+  S.coins-=RANCH.feedCost; R.feed=100; S.stats.feed=(S.stats.feed||0)+1;
+  floatText(78,204,'모이 가득!','gold'); burst(78,214,'dust',8); sfx('cluck'); ranchAn.filter(a=>a.kind==='hen').forEach(a=>{ a.tx=clamp(rand(66,92),PEN.x0,PEN.x1); a.ty=rand(200,214); a.t=rand(3,5); });
+  save(); updHud();
+}
+function fillCarrot(){
+  const R=S.ranch; if(!R.rabbits) return;
+  if(R.carrot>=95){ floatText(112,86,'당근이 가득해요',''); return; }
+  if(S.coins<RANCH.carrotCost){ toast(`당근은 ${RANCH.carrotCost}코인이에요`); sfx('no'); return; }
+  S.coins-=RANCH.carrotCost; R.carrot=100; S.stats.carrot=(S.stats.carrot||0)+1;
+  floatText(112,84,'당근 가득!','gold'); burst(118,96,'spark',6); sfx('pet');
+  ranchAn.filter(a=>a.kind==='rabbit').forEach(a=>{ a.pet=1.2; burst(a.x,a.y-6,'heart',2); });
+  save(); updHud();
+}
+function tapRanch(x,y){
+  const R=S.ranch; if(!R.open) return false;
+  for(const e of R.eggs){ if(Math.hypot(e.x-x,e.y-2-y)<8){
+    R.eggs=R.eggs.filter(o=>o!==e); const c=e.g?RANCH.goldEggCoins:RANCH.eggCoins; S.coins+=c; S.stats.eggs=(S.stats.eggs||0)+1; if(e.g) S.stats.goldEggs=(S.stats.goldEggs||0)+1;
+    gainXP(e.g?5:1); floatText(e.x,e.y-8,(e.g?'황금 달걀 +':'달걀 +')+c, 'gold'); burst(e.x,e.y,'spark',e.g?10:4); sfx('coin'); buzz(10); save(); updHud(); return true; } }
+  for(const c of R.clovers){ if(Math.hypot(c.x-x,c.y-2-y)<8){
+    R.clovers=R.clovers.filter(o=>o!==c); S.coins+=RANCH.cloverCoins; S.stats.clovers=(S.stats.clovers||0)+1;
+    S.buff.gold=Math.max(Date.now(),S.buff.gold)+RANCH.cloverLuckMin*60000; gainXP(3); renderBuffs();
+    floatText(c.x,c.y-8,`네잎클로버! +${RANCH.cloverCoins}`,'green'); burst(c.x,c.y,'spark',10); sfx('buy'); buzz(15);
+    if((S.stats.clovers||0)<=2) toast(`행운이 찾아왔어요! ${RANCH.cloverLuckMin}분 동안 황금 복숭아가 잘 열려요`,3200);
+    save(); updHud(); return true; } }
+  let best=null, bd=8;
+  for(const a of ranchAn){ const d=Math.hypot(a.x-x,a.y-4-y); if(d<bd){ bd=d; best=a; } }
+  if(best){ best.pet=1; best.t=rand(2,4); best.tx=best.x; best.ty=best.y; burst(best.x,best.y-8,'heart',2);
+    if(best.kind==='hen'){ floatText(best.x,best.y-14,'꼬꼬','pink'); sfx('cluck'); best.peck=0.6; }
+    else { floatText(best.x,best.y-14,'깡총','pink'); sfx('pet'); best.hop=0.01; const [nx,ny]=penPos(); best.tx=clamp(best.x+(nx>best.x?14:-14),PEN.x0,PEN.x1); best.ty=clamp(best.y+rand(-6,6),PEN.y0,PEN.y1); }
+    return true; }
+  if(R.hens && x>60 && x<98 && y>206 && y<224){ fillFeed(); return true; }
+  if(R.rabbits && x>126 && x<141 && y>86 && y<101){ fillCarrot(); return true; }
+  if(x>28 && x<60 && y>64 && y<102){ renderRanch(); return true; }
+  if(x>98 && x<128 && y>70 && y<102){ if(R.rabbits) fillCarrot(); else renderRanch(); return true; }
+  return false;
+}
+function ranchNeeds(){
+  const R=S.ranch; if(!R.open) return false;
+  return R.eggs.length>=3 || R.clovers.length>0 || (R.hens && R.feed<15) || (R.rabbits && R.carrot<=0) || pests.some(p=>p.field===RANCH_F && p.state!=='out');
+}
+function renderRanch(tab){
+  tab=tab||'ani'; const R=S.ranch, coin=`<img src="${asURL(icCoin)}" alt="">`;
+  if(!R.open){ toast('먼저 목장을 열어 주세요'); return; }
+  let h=tabs([['ani','동물'],['deco','목장 꾸미기']], tab, 'tab');
+  if(tab==='ani'){
+    h+=`<div class="catcard"><img src="${asURL(icHenI,6)}" alt="" style="width:60px"><div style="flex:1">
+      <div style="font-size:15px">${RANCH.name}</div>
+      <small style="opacity:.75">닭 ${R.hens}마리${R.rabbits?`, 토끼 ${R.rabbits}마리`:''}, 바닥에 달걀 ${R.eggs.length}개</small>
+      <small style="display:block;opacity:.75">모이 ${Math.round(R.feed)}%${R.rabbits?`, 당근 ${Math.round(R.carrot)}%`:''}</small></div></div>`;
+    h+=`<div class="row"><img src="${asURL(icGrain,4)}" alt="" style="object-fit:contain"><div class="t"><b>모이통 채우기</b>
+      <div class="bar"><i style="width:${Math.round(R.feed)}%"></i></div><small>배부른 닭은 ${Math.round(eggSec()/60)}분마다 달걀을 하나씩 낳아요</small></div>
+      <button class="btn" data-r="feed" ${R.feed>=95||S.coins<RANCH.feedCost?'disabled':''}>${coin}${RANCH.feedCost}</button></div>`;
+    const hc=RANCH.henCost[R.hens];
+    h+=`<div class="row"><img src="${asURL(icHenI,4)}" alt="" style="object-fit:contain"><div class="t"><b>닭 데려오기</b> <span class="lv">${R.hens}/${RANCH.henCost.length}</span>
+      <small>닭이 많을수록 달걀이 많이 모여요</small></div>
+      ${hc===undefined?'<span class="lv">최대</span>':`<button class="btn" data-r="hen" ${S.coins>=hc?'':'disabled'}>${coin}${hc}</button>`}</div>`;
+    if(!unlocked('rabbit')) h+=`<div class="row" style="opacity:.55"><img src="${asURL(icRabbitI,4)}" alt="" style="object-fit:contain"><div class="t"><b>토끼 데려오기</b><small>당근을 먹은 토끼는 가끔 네잎클로버를 찾아 와요</small></div><span class="lv">Lv 10에 열려요</span></div>`;
+    else {
+      const rc=RANCH.rabbitCost[R.rabbits];
+      h+=`<div class="row"><img src="${asURL(icRabbitI,4)}" alt="" style="object-fit:contain"><div class="t"><b>토끼 데려오기</b> <span class="lv">${R.rabbits}/${RANCH.rabbitCost.length}</span>
+        <small>당근을 먹은 토끼는 가끔 네잎클로버를 찾아 와요</small></div>
+        ${rc===undefined?'<span class="lv">최대</span>':`<button class="btn" data-r="rabbit" ${S.coins>=rc?'':'disabled'}>${coin}${rc}</button>`}</div>`;
+      if(R.rabbits) h+=`<div class="row"><img src="${asURL(icCarrot,4)}" alt="" style="object-fit:contain"><div class="t"><b>당근 상자 채우기</b>
+        <div class="bar"><i style="width:${Math.round(R.carrot)}%"></i></div><small>배부른 토끼 한 마리가 ${RANCH.cloverMin}분에 클로버 하나 정도 찾아요</small></div>
+        <button class="btn" data-r="carrot" ${R.carrot>=95||S.coins<RANCH.carrotCost?'disabled':''}>${coin}${RANCH.carrotCost}</button></div>`;
+    }
+    h+=`<p class="small" style="margin:8px 0 0">달걀은 톡 눌러 주우면 코인이 돼요. 가끔 황금 달걀도 나와요. 네잎클로버를 주우면 ${RANCH.cloverLuckMin}분 동안 황금 복숭아가 잘 열려요. 쥐는 달걀과 모이를, 뱀은 닭장을 노리니 잘 지켜 주세요.</p>`;
+  } else {
+    h+=`<p style="margin:0 0 4px;opacity:.8">목장 꾸미기 하나마다 달걀이 6%씩 빨리 모여요.</p>`;
+    for(const d of RANCH_DECOS){ const own=!!R.deco[d.id];
+      if(d.lv && farmLv()<d.lv && !own){ h+=`<div class="row" style="opacity:.55"><img src="${asURL(ranchDecoIcon(d.id),3)}" alt="" style="width:40px;height:34px;object-fit:contain"><div class="t"><b>${d.name}</b><small>${d.desc}</small></div><span class="lv">Lv ${d.lv}에 열려요</span></div>`; continue; }
+      h+=`<div class="row"><img src="${asURL(ranchDecoIcon(d.id),3)}" alt="" style="width:40px;height:34px;object-fit:contain"><div class="t"><b>${d.name}</b><small>${d.desc}</small></div>
+        ${own?'<span class="lv">설치함</span>':`<button class="btn" data-r="deco" data-k="${d.id}" ${S.coins>=d.price?'':'disabled'}>${coin}${d.price}</button>`}</div>`; }
+  }
+  openModal(`${RANCH.name} (코인 ${S.coins})`, h);
+  $('mBody').querySelectorAll('button[data-tab]').forEach(b=>b.onclick=()=>renderRanch(b.dataset.tab));
+  $('mBody').querySelectorAll('button[data-r]').forEach(b=>b.onclick=()=>{
+    const a=b.dataset.r;
+    if(a==='feed') fillFeed();
+    else if(a==='carrot') fillCarrot();
+    else if(a==='hen'){ const c=RANCH.henCost[R.hens]; if(c!==undefined && S.coins>=c){ S.coins-=c; R.hens++; sfx('cluck'); gainXP(5); toast('새 닭이 목장에 왔어요!'); } }
+    else if(a==='rabbit'){ const c=RANCH.rabbitCost[R.rabbits]; if(c!==undefined && S.coins>=c && unlocked('rabbit')){ S.coins-=c; if(!R.rabbits) R.carrot=100; R.rabbits++; sfx('buy'); gainXP(5); toast(R.rabbits===1?'토끼가 목장에 왔어요! 토끼집 옆 당근 상자를 채워 주세요':'토끼가 한 마리 더 왔어요!',3200); } }
+    else if(a==='deco'){ const d=RANCH_DECOS.find(x=>x.id===b.dataset.k); if(d && !R.deco[d.id] && S.coins>=d.price && (!d.lv||farmLv()>=d.lv)){ S.coins-=d.price; R.deco[d.id]=true; sfx('buy'); gainXP(5); toast(`${d.name}을(를) 설치했어요!`); } }
+    syncAnimals(); save(); updHud(); renderRanch(tab);
+  });
+}
+
+// ----- 목장 그리기 -----
+function drawCoop(g,x,y){
+  for(let k=0;k<9;k++){ const w=4+k*4-(k>7?2:0); RR(g,x+15-w/2,y+k,w,1,k===0?'#8a2f2a':'#d9534a'); RR(g,x+15-w/2,y+k,1,1,'#8a2f2a'); RR(g,x+15+w/2-1,y+k,1,1,'#8a2f2a'); }
+  RR(g,x+1,y+9,28,1,'#8a2f2a');
+  RR(g,x+2,y+10,26,18,'#5a3428'); RR(g,x+3,y+10,24,17,'#e0b07a');
+  for(let k=0;k<5;k++) RR(g,x+3,y+12+k*3,24,1,'#c9935a');
+  RR(g,x+11,y+17,9,10,'#5a3428'); RR(g,x+12,y+18,7,9,'#3a2014'); RR(g,x+13,y+17,5,1,'#5a3428');
+  RR(g,x+5,y+13,5,5,'#5a3428'); RR(g,x+6,y+14,3,3,'#ffe9a8');
+  RR(g,x+21,y+13,5,4,'#fff6ee'); RR(g,x+22,y+14,1,1,'#e8453c'); RR(g,x+24,y+14,1,1,'#e8453c'); // 작은 간판
+  RR(g,x+12,y+27,7,1,'#e8c060'); RR(g,x+10,y+28,11,2,'#e8c060'); // 짚 경사로
+}
+function drawHutch(g,x,y){
+  RR(g,x,y+4,26,2,'#5a3428'); for(let k=0;k<4;k++) RR(g,x+2+k*2,y+3-k,22-k*4,1,'#7a4a3a');
+  RR(g,x+1,y+6,24,14,'#5a3428'); RR(g,x+2,y+6,22,13,'#c98a5a');
+  RR(g,x+4,y+8,11,9,'#3a2014'); for(let k=0;k<4;k++) RR(g,x+5+k*3,y+8,1,9,'#d8dde4'); RR(g,x+4,y+12,11,1,'#d8dde4');
+  RR(g,x+17,y+9,5,8,'#3a2014'); RR(g,x+18,y+10,3,7,'#2a170e');
+  RR(g,x+3,y+20,2,4,'#5a3428'); RR(g,x+21,y+20,2,4,'#5a3428');
+}
+function drawCrate(g,x,y,full){
+  RR(g,x,y,13,9,'#5a3428'); RR(g,x+1,y+3,11,5,'#c9935a'); RR(g,x+1,y+5,11,1,'#a8714c');
+  if(full>0){ const n=Math.ceil(full/25); for(let k=0;k<n;k++){ RR(g,x+2+k*3,y+1,2,3,'#ff8a3a'); RR(g,x+2+k*3,y,1,1,'#6cc35a'); } }
+}
+function drawFeeder(g,x,y,feed){
+  RR(g,x,y,34,8,'#5a3428'); RR(g,x+1,y+1,32,5,'#a8714c'); RR(g,x+2,y+2,30,3,'#6b4430');
+  const w=Math.round(30*feed/100); if(w>0){ RR(g,x+2,y+2,w,2,'#f2c94c'); for(let k=2;k<w;k+=4) RR(g,x+2+k,y+2,1,1,'#fff0a8'); }
+  RR(g,x+2,y+8,2,2,'#5a3428'); RR(g,x+30,y+8,2,2,'#5a3428');
+}
+const RANCH_DECO_DRAW = {
+  hay:(g,x,y)=>{ RR(g,x,y+3,18,10,'#8a6a20'); RR(g,x+1,y+4,16,8,'#e8c860'); RR(g,x+1,y+7,16,1,'#c9a040'); RR(g,x+5,y,10,4,'#8a6a20'); RR(g,x+6,y+1,8,3,'#f2d77a');
+    for(const k of [3,8,13]) RR(g,x+k,y+4,1,8,'#d8b450'); },
+  trough:(g,x,y)=>{ RR(g,x,y,20,8,'#5a3428'); RR(g,x+1,y+1,18,5,'#8b5a3c'); RR(g,x+2,y+1,16,3,'#7cc4f5'); RR(g,x+4,y+1,4,1,'#d4efff'); RR(g,x+2,y+8,2,2,'#5a3428'); RR(g,x+16,y+8,2,2,'#5a3428'); },
+  sunflower:(g,x,y,t)=>{ for(let k=0;k<4;k++){ const sy=y+k*28, sw=Math.round(Math.sin(t*1.5+k)*0.6);
+      RR(g,x+3,sy+5,1,14,'#4c9a48'); RR(g,x+4,sy+10,2,1,'#6cc35a'); RR(g,x+1,sy+13,2,1,'#6cc35a');
+      RR(g,x+sw,sy,7,7,'#5a3428'); RR(g,x+1+sw,sy+1,5,5,'#ffd84a'); RR(g,x+2+sw,sy+2,3,3,'#8b5a3c'); RR(g,x+3+sw,sy-1,1,1,'#ffd84a'); RR(g,x+3+sw,sy+7,1,1,'#ffd84a'); } },
+  burrow:(g,x,y)=>{ RR(g,x+3,y,14,2,'#7a9a48'); RR(g,x+1,y+2,18,3,'#8fb85a'); RR(g,x,y+5,20,5,'#a0683f'); RR(g,x+1,y+5,18,1,'#7cc35e'); RR(g,x+7,y+5,6,5,'#3a2014'); RR(g,x+8,y+4,4,1,'#3a2014'); },
+  windmill:(g,x,y,t)=>{ RR(g,x+5,y+14,8,30,'#5a3428'); RR(g,x+6,y+14,6,29,'#f3e0c0'); RR(g,x+7,y+30,4,13,'#8b5a3c'); RR(g,x+4,y+11,10,4,'#d9534a');
+      const cx=x+9, cy=y+13, a=t*1.6; for(let b=0;b<4;b++){ const an=a+b*Math.PI/2; for(let r=2;r<10;r++){ RR(g,Math.round(cx+Math.cos(an)*r),Math.round(cy+Math.sin(an)*r),2,2,r%3?'#fff6ee':'#c9935a'); } }
+      RR(g,cx-1,cy-1,2,2,'#5a3428'); },
+};
+const RANCH_DECO_POS = {hay:[106,196], trough:[100,124], sunflower:[6,122], burrow:[34,204], windmill:[140,112]};
+function ranchDecoIcon(id){ const sz={hay:[18,13], trough:[20,10], sunflower:[8,26], burrow:[20,10], windmill:[19,44]}[id];
+  const c=document.createElement('canvas'); c.width=sz[0]; c.height=sz[1]; const g=c.getContext('2d');
+  if(id==='sunflower'){ const k=document.createElement('canvas'); k.width=8; k.height=120; RANCH_DECO_DRAW.sunflower(k.getContext('2d'),0,1,0); g.drawImage(k,0,0); }
+  else RANCH_DECO_DRAW[id](g,0,0,0.3); return c; }
+function drawRanchGround(t){
+  const R=S.ranch;
+  RR(ctx,26,108,108,120,'#a3db7c'); for(let k=0;k<16;k++){ const x=30+(k*37)%96, y=114+(k*53)%104; RR(ctx,x,y,3,1,'#8fcf6c'); RR(ctx,x+1,y+1,1,1,'#c4eba0'); }
+  RR(ctx,60,198,40,14,'#c9a86a'); RR(ctx,64,196,32,2,'#c9a86a'); RR(ctx,62,212,36,2,'#c9a86a');
+  // 울타리 (위, 양옆)
+  for(let x=24;x<=134;x+=10){ RR(ctx,x,100,4,10,'#7a4a3a'); RR(ctx,x+1,101,2,8,'#f3d2a8'); }
+  RR(ctx,24,103,114,2,'#7a4a3a'); RR(ctx,24,103,114,1,'#e8bf8e');
+  for(let y=110;y<=226;y+=10){ for(const x of [24,134]){ RR(ctx,x,y,4,9,'#7a4a3a'); RR(ctx,x+1,y+1,2,7,'#f3d2a8'); } }
+  RR(ctx,25,108,2,122,'#7a4a3a'); RR(ctx,135,108,2,122,'#7a4a3a');
+  if(R.deco.sunflower) RANCH_DECO_DRAW.sunflower(ctx,...RANCH_DECO_POS.sunflower,t);
+  if(R.deco.windmill) RANCH_DECO_DRAW.windmill(ctx,...RANCH_DECO_POS.windmill,t);
+  if(!R.open) return;
+  drawCoop(ctx,28,70);
+  if(R.rabbits || unlocked('rabbit')){ drawHutch(ctx,100,76); if(R.rabbits) drawCrate(ctx,127,90,R.carrot); }
+  drawFeeder(ctx,61,207,R.hens?R.feed:0);
+}
+function ranchEnts(ents,t){
+  const R=S.ranch;
+  ents.push({y:233, d:()=>{ for(let x=24;x<=134;x+=10){ RR(ctx,x,224,4,10,'#7a4a3a'); RR(ctx,x+1,225,2,8,'#f3d2a8'); } RR(ctx,24,228,114,2,'#7a4a3a'); RR(ctx,24,228,114,1,'#e8bf8e'); }});
+  if(!R.open) return;
+  for(const id of ['hay','trough','burrow']) if(R.deco[id]){ const [x,y]=RANCH_DECO_POS[id], hh={hay:13,trough:10,burrow:10}[id]; ents.push({y:y+hh, d:()=>RANCH_DECO_DRAW[id](ctx,x,y,t)}); }
+  for(const e of R.eggs) ents.push({y:e.y, d:()=>{ ctx.drawImage(e.g?icEggG:icEgg, e.x-2, e.y-5); if(e.g && Math.floor(t*3+e.x)%3===0) RR(ctx,e.x+2,e.y-6,1,1,'#ffffff'); }});
+  for(const c of R.clovers) ents.push({y:c.y, d:()=>{ ctx.drawImage(icClover, c.x-4, c.y-8+Math.round(Math.sin(t*3+c.x))); if(Math.floor(t*2+c.y)%4===0) RR(ctx,c.x+3,c.y-7,1,1,'#ffffff'); }});
+  for(const a of ranchAn) ents.push({y:a.y, d:()=>drawAnimal(a,t)});
+}
+function drawAnimal(a,t){
+  const x=Math.round(a.x), y=Math.round(a.y);
+  ctx.fillStyle='rgba(60,90,40,.3)'; ctx.fillRect(x-4,y,9,1);
+  if(a.kind==='hen'){
+    const img = a.peck>0 && Math.floor(a.a*6)%2 ? HEN.peck : (a.moving && Math.floor(a.a*8)%2 ? HEN.b : HEN.a);
+    ctx.drawImage(img[a.dir], x-5, y-9);
+  } else {
+    const R=RABBIT[a.col], up = a.hop>0 ? Math.round(Math.abs(Math.sin(a.hop))*3) : 0;
+    ctx.drawImage((up>1?R.hop:R.sit)[a.dir], x-5, y-9-up);
+  }
+  if(a.pet>0 && Math.floor(t*4)%2) ctx.drawImage(icHeart, x-2, y-15);
+}
+function ranchBubbles(t){
+  const R=S.ranch; if(!R.open) return;
+  if(R.hens && R.feed<15) bubble(78,196,icGrain,t);
+  if(R.rabbits && R.carrot<=0) bubble(133,80,icCarrot,t);
+}
+
+// ================= 쥐와 뱀 =================
+let pests=[], mouseTimer=rand(...PESTS.mouseEvery), snakeTimer=rand(...PESTS.snakeEvery);
+const pestsOn = ()=> unlocked('pests') && S.seenHelp;
+const snakeAtCoop = ()=> pests.some(p=>p.kind==='snake' && p.field===RANCH_F && p.state==='eat');
+const snakeOnTree = i => pests.some(p=>p.kind==='snake' && p.target.type==='tree' && p.target.i===i && p.state!=='out');
+function spawnMouse(){
+  if(pests.some(p=>p.kind==='mouse')) return;
+  let T=null;
+  if(isRanch()){ const R=S.ranch; if(!R.open) return;
+    if(R.eggs.length){ const e=R.eggs[irand(0,R.eggs.length-1)]; T={type:'egg', egg:e, x:e.x+(e.x<80?-7:7), y:e.y}; }
+    else if(R.hens && R.feed>10) T={type:'feed', x:rand(66,94), y:218};
+  } else { const ripe=ripeTrees(); if(ripe.length){ const i=ripe[irand(0,ripe.length-1)], [x,y]=P(i); T={type:'tree', i, x:x+(Math.random()<.5?-10:10), y:y+5}; } }
+  if(!T) return;
+  const fromL=T.x<W/2;
+  pests.push({kind:'mouse', field:curField, x:fromL?-8:W+8, y:clamp(T.y+rand(-24,24),62,250), target:T, state:'in', timer:0, a:0, age:0, dir:fromL?0:1, taps:0});
+  if(!S.seenMouse){ S.seenMouse=1; toast('쥐가 나타났어요! 톡 눌러 쫓아 주세요',3000); }
+  sfx('squeak');
+}
+function spawnSnake(){
+  if(curSeason==='winter' || pests.some(p=>p.kind==='snake')) return;
+  let T=null;
+  if(isRanch()){ if(!S.ranch.open || !S.ranch.hens) return; T={type:'coop', x:44, y:112}; }
+  else { const open=fieldTrees(curField).filter(i=>S.trees[i].u && S.trees[i].stage>=1); if(!open.length) return;
+    const i=open[irand(0,open.length-1)], [x,y]=P(i); T={type:'tree', i, x:x+(x<W/2?-12:12), y:y+6}; }
+  const fromL=T.x<W/2;
+  pests.push({kind:'snake', field:curField, x:fromL?-16:W+16, y:clamp(T.y+rand(0,24),70,250), target:T, state:'in', timer:0, a:0, age:0, dir:fromL?0:1, taps:0, recoil:0});
+  toast(T.type==='coop' ? '뱀이 닭장으로 다가가요! 세 번 톡톡 눌러 쫓아 주세요' : '나무 밑으로 뱀이 다가가요! 세 번 톡톡 눌러 쫓아 주세요', 3200);
+  sfx('hiss');
+}
+function pestMove(p,tx,ty,step){
+  const dx=tx-p.x, dy=ty-p.y, d=Math.hypot(dx,dy);
+  if(Math.abs(dx)>0.5) p.dir=dx<0?1:0;
+  if(d<=step){ p.x=tx; p.y=ty; return true; }
+  p.x+=dx/d*step; p.y+=dy/d*step; return false;
+}
+function pestLeave(p){ p.state='out'; p.tx=p.x<W/2?-20:W+20; p.ty=p.y; }
+function pestBite(p){
+  const T=p.target, R=S.ranch;
+  if(p.kind==='mouse'){
+    if(T.type==='egg'){ if(R.eggs.includes(T.egg)){ R.eggs=R.eggs.filter(e=>e!==T.egg); floatText(p.x,p.y-8,'달걀 슝!','pink'); toast('쥐가 달걀을 물고 도망갔어요'); } }
+    else if(T.type==='feed'){ R.feed=Math.max(0,R.feed-25); floatText(p.x,p.y-8,'오물오물','pink'); toast('쥐가 모이를 훔쳐 먹었어요'); }
+    else { const t=S.trees[T.i]; if(t.stage===4 && t.fruit>1 && !t.bag){ t.fruit--; floatText(p.x,p.y-8,'갉작갉작','pink'); toast('쥐가 복숭아 하나를 갉아 먹었어요'); } }
+    pestLeave(p);
+  } else if(T.type==='coop' && !p.ate){
+    p.ate=true; p.timer=16;
+    if(R.eggs.length){ R.eggs.pop(); floatText(p.x,p.y-10,'꿀꺽','pink'); toast('뱀이 달걀을 하나 삼켰어요 ㅠㅠ'); }
+    return;
+  } else pestLeave(p);
+  save();
+}
+function pestFlee(p, by){
+  pestLeave(p);
+  const m=p.kind==='mouse', c=m?PESTS.mouseCoins:PESTS.snakeCoins;
+  if(m) S.stats.mice=(S.stats.mice||0)+1; else S.stats.snakes=(S.stats.snakes||0)+1;
+  S.coins+=c; gainXP(m?1:3);
+  floatText(p.x,p.y-12,(by==='cat'?'냥냥 펀치! ':m?'찍찍! ':'쉭쉭~ ')+'+'+c,'gold'); burst(p.x,p.y,'dust',6);
+  sfx(m?'squeak':'hiss'); buzz(15); updHud(); save();
+}
+function tapPest(x,y){
+  for(const p of pests){
+    if(p.field!==curField || p.state==='out') continue;
+    const hit = p.kind==='mouse' ? Math.hypot(p.x-x,p.y-2-y)<12 : (Math.abs(p.x+(p.dir?6:-6)-x)<16 && Math.abs(p.y-1-y)<10);
+    if(!hit) continue;
+    if(p.kind==='mouse'){ pestFlee(p,'player'); return true; }
+    p.taps++; p.recoil=0.35; buzz(12); burst(p.x,p.y,'dust',4);
+    if(p.taps>=PESTS.snakeTaps) pestFlee(p,'player');
+    else { floatText(p.x,p.y-12,p.taps===1?'쉭!?':'쉬이익!',''); sfx('hiss'); }
+    return true;
+  }
+  return false;
+}
+function updatePests(dt){
+  if(pestsOn() && S.seenHelp && modalIdle()){
+    mouseTimer-=dt; if(mouseTimer<=0){ spawnMouse(); mouseTimer=rand(...PESTS.mouseEvery); }
+    snakeTimer-=dt; if(snakeTimer<=0){ spawnSnake(); snakeTimer=rand(...PESTS.snakeEvery); }
+  }
+  for(const p of pests){
+    p.a+=dt; p.age+=dt; if(p.recoil>0) p.recoil-=dt;
+    if(p.state==='in'){
+      if(p.target.type==='egg' && !S.ranch.eggs.includes(p.target.egg)){ const e=S.ranch.eggs[0]; if(e){ p.target.egg=e; p.target.x=e.x+(e.x<80?-7:7); p.target.y=e.y; } else pestLeave(p); }
+      if(p.state==='in' && pestMove(p,p.target.x,p.target.y,(p.kind==='mouse'?46:15)*dt)){ p.state='eat'; p.timer=p.kind==='mouse'?6:(p.target.type==='coop'?12:40); }
+    } else if(p.state==='eat'){ p.timer-=dt; if(p.timer<=0) pestBite(p); }
+    else pestMove(p,p.tx,p.ty,(p.kind==='mouse'?85:42)*dt);
+  }
+  pests=pests.filter(p=>!(p.state==='out' && (p.x<=-19||p.x>=W+19)));
+  guardTick();
+}
+function guardTick(){
+  const need=pests.find(p=>p.field===curField && p.state!=='out' && p.age>4 && !p.hunted && ((p.kind==='mouse'&&S.cat.aff>=50)||(p.kind==='snake'&&S.cat.aff>=80)));
+  if(!need) return;
+  if(cat){
+    if(cat.prey || ['eat','leave','hunt'].includes(cat.state)) return;
+    if(cat.field!==curField){ const fromL=need.x<W/2; cat.field=curField; cat.x=fromL?-12:W+12; cat.y=clamp(need.y,70,248); cat.played=true; toast(`${catIga()} 달려왔어요!`); }
+  } else {
+    const fromL=need.x<W/2;
+    cat={x:fromL?-12:W+12, y:clamp(need.y,70,248), state:'hunt', tree:-1, field:curField, taps:0, timer:0, play:0, a:0, dir:fromL?0:1, hop:0, fed:false, played:true, guard:true};
+    toast(`${catIga()} 달려왔어요!`);
+  }
+  need.hunted=true; cat.prey=need; cat.state='hunt'; sfx('meow');
+}
+function drawSnake(p,t){
+  const x=Math.round(p.x), y=Math.round(p.y), s=p.dir?-1:1, moving=p.state!=='eat';
+  const up = p.recoil>0 ? 3 : (p.state==='eat' ? 1 : 0);
+  ctx.fillStyle='rgba(60,90,40,.3)'; ctx.fillRect(x-(s>0?20:-4)-2,y+2,22,1);
+  const seg=[]; for(let k=1;k<=11;k++) seg.push([x-s*k*1.7, y+Math.sin(t*(moving?8:3)-k*0.75)*(moving?1.6:1)]);
+  for(const [px,py] of seg) RR(ctx,Math.round(px)-1,Math.round(py)-1,4,4,'#2f5d34');
+  seg.forEach(([px,py],k)=>RR(ctx,Math.round(px),Math.round(py),2,2,k%3===1?'#e8d27a':'#6cc35a'));
+  const hx=x, hy=y-up;
+  RR(ctx,hx-2,hy-2,6,5,'#2f5d34'); RR(ctx,hx-1,hy-1,4,3,'#5ab04a'); RR(ctx,hx+(s>0?1:0),hy-1,1,1,'#1d1d1d');
+  if(Math.floor(t*3)%2) { RR(ctx,s>0?hx+4:hx-4,hy+1,2,1,'#e8453c'); }
+  if(p.taps>0 && p.state!=='out') for(let k=0;k<PESTS.snakeTaps-p.taps;k++) ctx.drawImage(icHeart, x-6+k*6, y-12);
+}
+function drawPest(p,t){
+  if(p.kind==='snake'){ drawSnake(p,t); return; }
+  const x=Math.round(p.x), y=Math.round(p.y), run=p.state!=='eat';
+  ctx.fillStyle='rgba(60,90,40,.3)'; ctx.fillRect(x-4,y+1,9,1);
+  const img=(run ? (Math.floor(p.a*14)%2?MOUSE.a:MOUSE.b) : (Math.floor(p.a*5)%2?MOUSE.a:MOUSE.b))[p.dir];
+  ctx.drawImage(img, x-5, y-5+(run?0:Math.floor(p.a*6)%2));
 }
 
 // ================= 탭 처리 =================
@@ -1820,6 +2252,7 @@ function tapTree(i){
     return;
   }
   t.shake=.35;
+  if(snakeOnTree(i)){ floatText(x,y-34,'뱀이 무서워요!',''); toast('나무 밑에 뱀이 있어서 다가갈 수가 없어요. 뱀을 세 번 톡톡 눌러 쫓아 주세요'); sfx('no'); return; }
   if(t.stage===4 && t.fruit>0){
     const g = t.golden?1:0; let n=t.fruit-g; const vid = VAR[t.variety]?t.variety:'baekdo';
     let extra = 0; if(S.buff.bonus>0){ extra=2; n+=2; S.buff.bonus--; }
@@ -1858,11 +2291,12 @@ cvs.addEventListener('pointerdown',e=>{
   const r=cvs.getBoundingClientRect(), x=(e.clientX-r.left)/r.width*W, y=(e.clientY-r.top)/r.height*H;
   if(dad && dad.field===curField && x>dad.x-9 && x<dad.x+9 && y>dad.y-22 && y<dad.y+2){ talkDad(); return; }
   if(SSHONG.showLetter && S.ss && S.ss.unread && x>72 && x<89 && y>40 && y<54){ openLetter(); return; }
+  if(tapPest(x,y)) return;
   if(starTap(x,y)) return;
   if(skyPhase()==='night' && !evtIs('chuseok') && x>118 && x<142 && y<24){ moonTap(); return; }
   if(tteokTap(x,y)) return;
   if(napTap(x,y)) return;
-  if(S.up.scare>0 && x>73 && x<88 && y>118 && y<138){ scareTap(); return; }
+  if(!isRanch() && S.up.scare>0 && x>73 && x<88 && y>118 && y<138){ scareTap(); return; }
   if(tapVisitor(x,y)){ updHud(); save(); return; }
   for(const gf of gifts){ if(gf.field===curField && Math.hypot(gf.x-x,gf.y-4-y)<10){ gifts=gifts.filter(o=>o!==gf); S.coins+=gf.c; floatText(gf.x,gf.y-12,'선물 +'+gf.c,'gold'); burst(gf.x,gf.y,'spark',8); sfx('coin'); updHud(); save(); return; } }
   for(const b of bugs){ if(b.field!==curField) continue; const [bx,by]=bugPos(b);
@@ -1877,6 +2311,7 @@ cvs.addEventListener('pointerdown',e=>{
   if(unlocked('mini') && x<23 && y>=78 && y<95){ openHub('play'); return; }
   if(S.deco.mailbox && x>143 && x<159 && y>54 && y<74){ renderReal(); return; }
   if(S.up.bee && x>138 && x<159 && y>72 && y<101){ collectHoney(); return; }
+  if(isRanch()){ if(tapRanch(x,y)) updHud(); return; }
   if(S.deco.pond && x>66 && x<94 && y>234 && y<250){ pondTap(); return; }
   const i=treeAt(x,y); if(i>=0){ tapTree(i); updHud(); }
 });
@@ -1973,25 +2408,27 @@ function drawBird(b){
 }
 function render(t){
   drawBG(t);
-  const ents=[];
+  const ents=[], ranch=isRanch();
+  if(ranch){ drawRanchGround(t); ranchEnts(ents,t); }
   for(const i of fieldTrees(curField)) ents.push({y:P(i)[1], d:()=>drawTreeSlot(i,S.trees[i],t)});
-  if(S.up.scare>0) ents.push({y:136, d:()=>{ if(Date.now()<danceUntil){ const ph2=Math.floor(t*4)%4, dx=[0,2,0,-2][ph2], hop=ph2%2?-2:0;
+  for(const p of pests) if(p.field===curField) ents.push({y:p.y, d:()=>drawPest(p,t)});
+  if(S.up.scare>0 && !ranch) ents.push({y:136, d:()=>{ if(Date.now()<danceUntil){ const ph2=Math.floor(t*4)%4, dx=[0,2,0,-2][ph2], hop=ph2%2?-2:0;
       ctx.drawImage(ph2<2?scarecrow:scarecrowF,75+dx,121+hop); } else ctx.drawImage(scarecrow,75,121); }});
   if(cat && cat.field===curField) ents.push({y:cat.y, d:()=>drawCat(t)});
   ents.push({y:74, d:()=>{ drawBoard(ctx,3,58); }});
   if(S.up.bee) ents.push({y:HIVE[1]+13, d:()=>ctx.drawImage(icHive,HIVE[0],HIVE[1])});
   if(unlocked('mini')) ents.push({y:92, d:()=>{ ctx.drawImage(icBasket,4,84); if(miniLeft()>0 && Math.floor(t*2)%4===0){ RR(ctx,9,81,1,1,'#fff6b0'); } }});
-  if(S.deco.sotdae) ents.push({y:227, d:()=>DECO_DRAW.sotdae(ctx,148,196)});
-  if(S.deco.stone) ents.push({y:222, d:()=>DECO_DRAW.stone(ctx,4,204)});
+  if(S.deco.sotdae && !ranch) ents.push({y:227, d:()=>DECO_DRAW.sotdae(ctx,148,196)});
+  if(S.deco.stone && !ranch) ents.push({y:222, d:()=>DECO_DRAW.stone(ctx,4,204)});
   for(const v of visitors) if(v.field===curField && v.type==='peddler') ents.push({y:v.y, d:()=>{
     ctx.fillStyle='rgba(60,90,40,.3)'; ctx.fillRect(Math.round(v.x)-5,v.y-1,10,2);
     ctx.drawImage(peddler, Math.round(v.x)-5, v.y-12+(v.life>4&&Math.abs(v.tx-v.x)>1?Math.floor(v.a*8)%2:0));
     if(Math.abs(v.tx-v.x)<1 && v.life>4) bubble(Math.round(v.x)+9, v.y-20, icCoin, t); }});
-  if(evtIs('xmas')) ents.push({y:166, d:()=>ctx.drawImage(snowman,75,153)});
+  if(evtIs('xmas') && !ranch) ents.push({y:166, d:()=>ctx.drawImage(snowman,75,153)});
   if(S.deco.pinwheel) ents.push({y:72, d:()=>DECO_DRAW.pinwheel(ctx,76,58,t)});
   if(S.deco.mailbox) ents.push({y:72, d:()=>DECO_DRAW.mailbox(ctx,148,58)});
-  if(S.deco.jang) ents.push({y:197, d:()=>DECO_DRAW.jang(ctx,71,186)});
-  if(S.deco.pond) ents.push({y:244, d:()=>DECO_DRAW.pond(ctx,70,238,t)});
+  if(S.deco.jang && !ranch) ents.push({y:197, d:()=>DECO_DRAW.jang(ctx,71,186)});
+  if(S.deco.pond && !ranch) ents.push({y:244, d:()=>DECO_DRAW.pond(ctx,70,238,t)});
   for(const gf of gifts.filter(g=>g.field===curField)) ents.push({y:gf.y, d:()=>{ gf.a+=0.05; ctx.drawImage(icGift, Math.round(gf.x)-3, Math.round(gf.y)-7+Math.round(Math.sin(gf.a*3))); }});
   ents.sort((a,b)=>a.y-b.y).forEach(e=>e.d());
   for(const i of fieldTrees(curField)){
@@ -2005,6 +2442,7 @@ function render(t){
     else if(tr.stage===3 && !tr.bag) icon=icBagI;
     if(icon) bubble(x+11, top, icon, t);
   }
+  if(ranch) ranchBubbles(t);
   for(const b of bugs){ if(b.field!==curField) continue; const [bx,by]=bugPos(b); ctx.drawImage(icBug, Math.round(bx)-3, Math.round(by)-2); }
   if(S.up.bee){ for(const b of bees){ const bx=Math.round(b.x), by=Math.round(b.y);
       RR(ctx,bx,by,2,2,'#ffd84a'); RR(ctx,bx+1,by,1,2,'#3a2a20'); if(Math.floor(t*20+b.a)%2) RR(ctx,bx,by-1,1,1,'#ffffff'); }
@@ -2093,6 +2531,10 @@ function renderShop(tab){
     h += `<div class="row"><img src="${asURL(treeImg(4,false,false))}" alt="" style="object-fit:contain"><div class="t"><b>${n&&n.kind==='field'?'밭 개척하기':'나무 자리 늘리기'}</b>
       <small>${lbl} (지금 ${planted}/${S.trees.length}그루)</small></div>
       ${!n?'':(n.kind==='field' && farmLv()<FIELDS[n.f].lv)?`<span class="lv">Lv ${FIELDS[n.f].lv}에 열려요</span>`:`<button class="btn" data-a="slot" ${S.coins>=n.cost?'':'disabled'}>${coin}${n.cost}</button>`}</div>`;
+    { const R=S.ranch, ok=unlocked('ranch');
+      h += `<div class="row" style="${ok?'':'opacity:.55'}"><img src="${asURL(icHenI,4)}" alt="" style="object-fit:contain"><div class="t"><b>${RANCH.name}</b>
+        <small>${R.open?`닭 ${R.hens}마리${R.rabbits?`, 토끼 ${R.rabbits}마리`:''}. 동물과 목장 꾸미기를 관리해요`:'닭을 키워 달걀을 모아요. 밭 오른쪽 끝에 있어요'}</small></div>
+        ${!ok?`<span class="lv">Lv ${RANCH.lv}에 열려요</span>`:R.open?'<button class="btn" data-a="ranch">관리</button>':`<button class="btn" data-a="ranchOpen" ${S.coins>=RANCH.cost?'':'disabled'}>${coin}${RANCH.cost}</button>`}</div>`; }
     for(const k in UPGRADES){
       const u=UPGRADES[k], lv=S.up[k], max=lv>=u.cost.length;
       if(u.lv && farmLv()<u.lv && !lv){ h += `<div class="row" style="opacity:.55"><img src="${upIcons[k]}" alt=""><div class="t"><b>${u.name}</b><small>${u.desc}</small></div><span class="lv">Lv ${u.lv}에 열려요</span></div>`; continue; }
@@ -2115,6 +2557,8 @@ function renderShop(tab){
   $('mBody').querySelectorAll('button[data-a]').forEach(b=>b.onclick=()=>{
     const a=b.dataset.a;
     if(a==='sell') sellAll();
+    else if(a==='ranch'){ renderRanch(); return; }
+    else if(a==='ranchOpen'){ openRanch(); if(S.ranch.open){ closeModal(); goField(RANCH_F); return; } }
     else if(a==='slot'){ const n=nextSlot(); if(n && n.kind==='slot') buySlot(n.i); else if(n) buyField(); }
     else if(a==='up'){ const k=b.dataset.k, c=UPGRADES[k].cost[S.up[k]]; if(S.coins>=c){ S.coins-=c; S.up[k]++; sfx('buy'); if(k==='bee'){ S.honeyAt=Date.now()+HONEY_HOURS*3600000; toast('꿀벌통을 놓았어요! 오른쪽 위에서 벌들이 날아다녀요',3200); } else toast(UPGRADES[k].name+' 레벨업!'); } }
     else if(a==='deco'){ const d=DECOS.find(x=>x.id===b.dataset.k); if(d && !S.deco[d.id] && S.coins>=d.price){ S.coins-=d.price; S.deco[d.id]=true; sfx('buy'); gainXP(5); toast(`${d.name}을(를) 설치했어요!`); } }
@@ -2168,6 +2612,8 @@ function renderInfo(tab){
       물 준 횟수 <b>${st.water}</b>, 가지치기 <b>${st.prune}</b><br>
       들어준 의뢰 <b>${st.orders||0}</b>개, 출석 <b>${S.att.count}</b>일째<br>
       잡은 벌레 <b>${st.bugs||0}</b>마리, 봉지 <b>${st.bags||0}</b>장, 이겨낸 태풍 <b>${st.typhoon||0}</b>번, 모은 꿀 <b>${st.honey||0}</b>통<br>
+      ${unlocked('pests')?`쫓은 쥐 <b>${st.mice||0}</b>마리, 쫓은 뱀 <b>${st.snakes||0}</b>마리${st.catGuard?`, 그중 고양이가 쫓은 것 <b>${st.catGuard}</b>마리`:''}<br>`:''}
+      ${S.ranch.open?`주운 달걀 <b>${st.eggs||0}</b>개${st.goldEggs?` (황금 달걀 ${st.goldEggs}개)`:''}, 네잎클로버 <b>${st.clovers||0}</b>개<br>`:''}
       찾은 비밀 <b>${Object.keys(eggs().found).filter(k=>EGG_KEYS.includes(k)).length}</b> / ${EGG_KEYS.length}</p>
       <p style="opacity:.8">${list}</p>
       ${SSHONG.showLetter&&S.ss&&S.ss.found?'<p><button class="btn" id="hLetter" style="display:inline-flex;flex-direction:row"><img src="'+asURL(icEnvelope,2)+'" alt="" style="width:18px">분홍 편지 다시 보기</button></p>':''}
@@ -2192,7 +2638,7 @@ function renderInfo(tab){
   if($('hLetter')) $('hLetter').onclick=openLetter;
   let armed=false;
   if($('hReset')) $('hReset').onclick=e=>{ if(!armed){ armed=true; e.target.textContent='정말요? 한 번 더'; return; }
-    S=normalize(newState()); S.seenHelp=true; curField=0; fieldKey=''; bugs=[]; typhoon=null; visitors=[]; S.att.last=todayKey(); birds=[]; cat=null; gifts=[]; initOrders(); save(); updHud(); closeModal(); toast('새 농장을 시작했어요'); };
+    S=normalize(newState()); S.seenHelp=true; curField=0; fieldKey=''; bugs=[]; pests=[]; ranchAn=[]; typhoon=null; visitors=[]; S.att.last=todayKey(); birds=[]; cat=null; gifts=[]; initOrders(); save(); updHud(); closeModal(); toast('새 농장을 시작했어요'); };
 }
 function showHelp(){
   const I=(c,t)=>`<div class="ico"><img src="${asURL(c)}" alt="">${t}</div>`;
@@ -2204,6 +2650,8 @@ function showHelp(){
     <p>새는 익은 복숭아를 쪼아 먹어요. 눌러서 쫓아내세요. 풋복숭아 때 봉지를 씌우면 새가 못 먹고 수확할 때 2개 더 얻어요.</p>
     <p>가끔 나무에 벌레가 붙어요. 톡 눌러 잡아 주세요.</p>
     <p>비 오는 날엔 물이 저절로 채워지고, 무지개가 뜨면 황금 복숭아가 잘 열려요. 태풍 예보가 오면 나무를 눌러 지지대를 세워 주세요.</p>
+    <p>농장 레벨 5부터는 쥐와 뱀도 가끔 나타나요. 쥐는 한 번, 뱀은 세 번 톡톡 눌러 쫓아요. 뱀이 있는 나무는 돌볼 수 없어요. 고양이와 친해지면 쥐를, 단짝이 되면 뱀도 대신 쫓아 줘요.</p>
+    <p>농장 레벨 9가 되면 밭 오른쪽 끝에 작은 목장을 열 수 있어요. 닭은 모이를 먹고 달걀을 낳고, 당근을 먹은 토끼는 가끔 네잎클로버를 찾아 와요. 닭장을 누르면 동물과 목장 꾸미기를 관리해요.</p>
     <p>코인이 모이면 새 밭을 개척할 수 있어요. 화면 양옆 화살표로 밭을 오가요. 화살표에 빨간 점이 뜨면 그쪽 밭에 할 일이 있다는 뜻이에요.</p>
     <p>계절마다 다른 품종이 열려요. 수첩 도감을 채워 보세요. 오래 키운 나무일수록 복숭아가 더 열리고, 수첩에서 나무 이름도 지어 줄 수 있어요.</p>
     <p>왼쪽 위 의뢰판을 누르면 마을 사람들의 부탁을 볼 수 있어요.</p>
@@ -2464,30 +2912,38 @@ function copyText(text,msg){
 const icArrowR = spr(['k....','kk...','kyk..','kyyk.','kyyyk','kyyk.','kyk..','kk...','k....'], {k:'#5a3428',y:'#ff9a80'});
 $('icNext').src=asURL(icArrowR); $('icPrev').src=asURL(flip(icArrowR));
 function fieldNeeds(f){
+  if(f===RANCH_F) return ranchNeeds();
   if(f>=S.fields) return false;
   if(cat && cat.field===f && cat.state==='sleep') return true;
   if(bugs.some(b=>b.field===f)) return true;
   return fieldTrees(f).some(i=>{ const t=S.trees[i]; return t.u && ((t.stage===4&&t.fruit>0) || t.water<35 || (t.stage>=1&&t.prune>=50) || stakeNeeded(t)); });
 }
 function goField(f){
-  const maxF=Math.min(S.fields, FIELDS.length-1);
+  const maxF=maxPage();
   f=clamp(f,0,maxF); if(f===curField) return;
-  curField=f; S.curField=f; birds=[]; parts=[]; sfx('pet'); save(); updField();
+  curField=f; S.curField=f; birds=[]; parts=[]; pests=[]; if(cat && cat.prey && cat.prey.kind){ cat.prey=null; if(cat.state==='hunt'){ cat.state='happy'; cat.timer=3; } }
+  sfx('pet'); save(); updField();
 }
 let fieldKey='';
 function updField(){
-  const maxF=Math.min(S.fields, FIELDS.length-1);
+  const maxF=maxPage(); if(curField>maxF){ curField=maxF; S.curField=maxF; }
+  const ranch=isRanch();
   const prevNeed = [...Array(curField).keys()].some(fieldNeeds);
-  const nextNeed = [...Array(FIELDS.length).keys()].filter(f=>f>curField).some(fieldNeeds);
-  const locked=curField>=S.fields, cost=locked?FIELDS[curField].cost:0;
-  const lvReq=locked?(FIELDS[curField].lv||1):1, lvOk=farmLv()>=lvReq;
+  const nextNeed = [...Array(maxF+1).keys()].filter(f=>f>curField).some(fieldNeeds);
+  const locked = ranch ? !S.ranch.open : curField>=S.fields, cost = ranch ? RANCH.cost : locked?FIELDS[curField].cost:0;
+  const lvReq = ranch ? RANCH.lv : locked?(FIELDS[curField].lv||1):1, lvOk=farmLv()>=lvReq;
   const key=[curField,S.fields,maxF,prevNeed,nextNeed,locked,locked&&S.coins>=cost,lvOk].join();
   if(key===fieldKey) return; fieldKey=key;
   $('fPrev').hidden = curField<=0; $('fNext').hidden = curField>=maxF;
   $('fPrev').classList.toggle('new',prevNeed); $('fNext').classList.toggle('new',nextNeed);
-  $('fName').innerHTML = `${FIELDS[curField].name}${locked?' (빈 땅)':''} ${FIELDS.map((_,f)=>f<=maxF?`<i class="${f===curField?'on':''}"></i>`:'').join('')}`;
+  $('fName').innerHTML = `${ranch?RANCH.name:FIELDS[curField].name}${locked&&!ranch?' (빈 땅)':''} ${[...Array(maxF+1).keys()].map(f=>`<i class="${f===curField?'on':''}"></i>`).join('')}`;
   const L=$('fLock');
-  if(locked){
+  if(locked && ranch){
+    L.hidden=false;
+    L.innerHTML = `<b>${RANCH.name}</b><small>울타리만 쳐 둔 빈 목장이에요.<br>목장을 열면 닭 두 마리가 이사 와요.<br>닭은 달걀을 낳고, 나중엔 토끼도 키울 수 있어요.</small>
+      <button class="btn" id="fBuy" ${S.coins>=cost?'':'disabled'}><img src="${asURL(icCoin)}" alt="">${cost} 목장 열기</button>`;
+    $('fBuy').onclick=openRanch;
+  } else if(locked){
     L.hidden=false;
     L.innerHTML = `<b>${FIELDS[curField].name}</b><small>풀만 무성한 빈 땅이에요.<br>개척하면 복숭아나무 두 그루를 바로 심어 줘요.</small>
       ${lvOk?`<button class="btn" id="fBuy" ${S.coins>=cost?'':'disabled'}><img src="${asURL(icCoin)}" alt="">${cost} 개척하기</button>`
@@ -2536,6 +2992,7 @@ function update(dt){
   simNow = Date.now(); growTrees(dt, catTree());
   birdTimer-=dt; if(birdTimer<=0){ spawnBirds(); birdTimer=rand(45,90)*(1+0.6*S.up.scare); }
   catTimer-=dt; if(catTimer<=0){ if(!cat) spawnCat(); catTimer = S.cat.aff>=80 ? rand(60,120) : rand(90,180); }
+  ranchTick(dt,true); updateAnimals(dt); updatePests(dt);
   updateBirds(dt); updateCat(dt); updateBugs(dt); updateBees(dt); updateVisitors(dt); updateDad(dt); updateStar(dt); updateTteok(dt); updateFairy(dt);
   const showCB = !!(cat && cat.field===curField && !cat.fed && ['enter','sleep','pause','dash'].includes(cat.state));
   if(catBtn.hidden===showCB) catBtn.hidden=!showCB;
@@ -2585,7 +3042,7 @@ if(REAL_FARM.shopUrl && S.shopNotice!==REAL_FARM.shopUrl) modalQueue.push(showSh
 nextModal();
 requestAnimationFrame(frame);
 if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
-window.__peach = {S:()=>S, pondTap, moonTap, scareTap, star:()=>star, setStar:v=>{star=v}, starTap, tteok:()=>tteok, checkFairy, fairy:()=>fairy, checkApril, napTap, ssTrigger, ssOpen, openLetter, dad:()=>dad, talkDad, ssGlow, gainXP, openHub, startMini, endMini:()=>endMini(false), mg:()=>mg, cp:()=>cp, startCatPlay, endCatPlay:()=>endCatPlay(false), spawnVisitor, visitors:()=>visitors, shareFarm, levelOf, farmLv, ensureDaily, bugs:()=>bugs, spawnBug, setWeather:w=>{weatherOverride=w}, setEvent:e=>{eventOverride=e}, startTyphoon, typhoonHit, ty:()=>typhoon, checkEvent, couponTick, goField, buyField, field:()=>curField, cat:()=>cat, birds:()=>birds, gifts:()=>gifts, setSeason:s=>{seasonOverride=s;curSeason=s;}, feedCat, newOrder, spawnCat:()=>{ if(!cat) spawnCat(); }, spawnBirds, ripe:()=>{ S.trees.forEach(t=>{ if(t.u){t.stage=3;advance(t);} }); }};
+window.__peach = {S:()=>S, pondTap, moonTap, scareTap, star:()=>star, setStar:v=>{star=v}, starTap, tteok:()=>tteok, checkFairy, fairy:()=>fairy, checkApril, napTap, ssTrigger, ssOpen, openLetter, dad:()=>dad, talkDad, ssGlow, gainXP, openHub, startMini, endMini:()=>endMini(false), mg:()=>mg, cp:()=>cp, startCatPlay, endCatPlay:()=>endCatPlay(false), spawnVisitor, visitors:()=>visitors, shareFarm, levelOf, farmLv, ensureDaily, bugs:()=>bugs, spawnBug, setWeather:w=>{weatherOverride=w}, setEvent:e=>{eventOverride=e}, startTyphoon, typhoonHit, ty:()=>typhoon, checkEvent, couponTick, goField, buyField, field:()=>curField, cat:()=>cat, birds:()=>birds, gifts:()=>gifts, setSeason:s=>{seasonOverride=s;curSeason=s;}, feedCat, newOrder, spawnCat:()=>{ if(!cat) spawnCat(); }, spawnBirds, ranch:()=>S.ranch, pests:()=>pests, spawnMouse, spawnSnake, openRanch, renderRanch, ranchAn:()=>ranchAn, ranchTick, tapPest, ripe:()=>{ S.trees.forEach(t=>{ if(t.u){t.stage=3;advance(t);} }); }};
 </script>
 </body>
 </html>
