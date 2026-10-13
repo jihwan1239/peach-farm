@@ -404,6 +404,11 @@ const PEDDLER = [
 const CHURU = 10;                         // 고양이 츄르 가격
 const ATT_REWARD = [10,15,20,25,30,40,50]; // 출석 보상 (7일째는 황금 복숭아도)
 
+// ===== 안드로이드 앱(APK) 받는 주소 =====
+// 커스텀 도메인을 쓰면 자동으로 알 수 없어서 여기에 적어 줘요.
+// 예: 'https://github.com/jihwan1239/peach-farm/releases/latest/download/igane-peach.apk'
+const APK_URL = 'https://github.com/jihwan1239/peach-farm/releases/latest/download/igane-peach.apk';
+
 // ===== 이가네 주막 메뉴 =====
 const MENU = [
   {id:'makgeolli', name:'막걸리', price:15, desc:'30분 동안 황금 복숭아가 두 배 잘 열려요', say:'캬~ 기분 좋게 한 사발!'},
@@ -2227,6 +2232,7 @@ const icShare = spr(['...k...','..kkk..','.k.k.k.','...k...','kk.k.kk','k.....k'
 const icAddBox = spr(['kkkkkkk','k.....k','k..k..k','k.kkk.k','k..k..k','k.....k','kkkkkkk'], {k:'#5a3428'});
 const icDots = spr(['.......','.......','k.k.k..','.......','.......'], {k:'#5a3428'});
 function githubApkUrl(){
+  if(APK_URL) return APK_URL;
   const h=location.hostname; if(!/\.github\.io$/.test(h)) return '';
   const owner=h.replace('.github.io',''), seg=location.pathname.split('/').filter(Boolean)[0];
   const repo = seg && !/\.html?$/.test(seg) ? seg : h;
