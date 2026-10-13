@@ -73,6 +73,25 @@ input{-webkit-user-select:text;user-select:text}
 #catBtn{position:absolute;right:12px;bottom:14px;font:inherit;font-size:13px;color:var(--ink);background:#fff3d6;
   border:2px solid var(--line);box-shadow:0 3px 0 var(--line);padding:6px 11px;display:flex;align-items:center;gap:5px;cursor:pointer;z-index:2;white-space:nowrap}
 #catBtn[hidden]{display:none}
+.fnav{position:absolute;top:55%;transform:translateY(-50%);width:30px;height:48px;padding:0;background:rgba(255,248,239,.93);border:2px solid var(--line);
+  box-shadow:0 2px 0 var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2}
+.fnav img{width:12px;height:18px;image-rendering:pixelated}
+.fnav[hidden]{display:none}
+.fnav:active{transform:translateY(calc(-50% + 2px));box-shadow:0 0 0 var(--line)}
+#fPrev{left:5px} #fNext{right:5px}
+.fnav.new::after{content:'';position:absolute;top:-6px;right:-6px;width:9px;height:9px;background:#ff5a5a;border:2px solid var(--line);border-radius:50%}
+#fLabel{position:absolute;top:7px;left:50%;transform:translateX(-50%);font-size:11px;background:rgba(255,248,239,.92);border:2px solid var(--line);
+  padding:2px 8px;z-index:2;pointer-events:none;white-space:nowrap;display:flex;gap:6px;align-items:center}
+#fLabel i{display:inline-block;width:6px;height:6px;border:1px solid var(--line);background:#fff}
+#fLabel i.on{background:#ff8a80}
+#fLabel[hidden]{display:none}
+#fLock{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:74%;background:var(--panel);border:3px solid var(--line);
+  box-shadow:0 4px 0 var(--line);padding:12px 12px 14px;text-align:center;z-index:2;font-size:13px;line-height:1.55}
+#fLock[hidden]{display:none}
+#fLock b{font-weight:normal;font-size:16px;display:block;margin-bottom:2px}
+#fLock small{display:block;opacity:.75;margin-bottom:10px}
+#fLock .btn{display:inline-flex;flex-direction:row;gap:5px;padding:8px 12px}
+#fLock .btn img{width:16px;height:16px;image-rendering:pixelated}
 #catBtn img{width:16px;height:16px;image-rendering:pixelated}
 #catBtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
 .tabs{display:flex;gap:6px;margin-bottom:8px}
@@ -110,6 +129,14 @@ s.old{opacity:.5;font-size:11px;margin-right:2px}
 .order .act .btn{flex-direction:row;padding:6px 9px;font-size:13px}
 .order .act .btn img{width:15px;height:15px;image-rendering:pixelated}
 .order .act .skip{font:inherit;font-size:12px;opacity:.6;background:none;border:0;color:var(--ink);cursor:pointer;margin-left:auto;text-decoration:underline}
+.bar{height:7px;border:2px solid var(--line);background:#fff;margin:4px 0 2px}
+.bar i{display:block;height:100%;background:#ff9a80}
+.cp{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px dashed #ecd0c2}
+.cp:last-child{border-bottom:0}
+.cp>img{width:30px;height:22px;image-rendering:pixelated;flex:none}
+.cp .t{flex:1;min-width:0}
+.cp .btn{flex-direction:row;padding:6px 9px;font-size:12px;white-space:nowrap}
+.fhead{margin:10px 0 2px;font-size:13px;color:#d26a5c}
 input.name{font:inherit;font-size:14px;border:2px solid var(--line);padding:6px 8px;width:130px;background:#fff;color:var(--ink);border-radius:2px}
 #bar button,.btn{font:inherit;color:var(--ink);background:var(--panel);border:2px solid var(--line);
   border-radius:2px;box-shadow:0 3px 0 var(--line);padding:9px 4px 8px;font-size:14px;cursor:pointer;
@@ -161,7 +188,7 @@ input.name{font:inherit;font-size:14px;border:2px solid var(--line);padding:6px 
     <button class="icon" id="bHelp" aria-label="도움말"><img id="icHelp" alt=""></button>
   </header>
   <div id="buffs"></div>
-  <main id="stage"><div id="box"><canvas id="game" width="160" height="256"></canvas><div id="fx"></div><button id="catBtn" hidden></button></div></main>
+  <main id="stage"><div id="box"><canvas id="game" width="160" height="256"></canvas><div id="fx"></div><button id="catBtn" hidden></button><button class="fnav" id="fPrev" aria-label="이전 밭"><img id="icPrev" alt=""></button><button class="fnav" id="fNext" aria-label="다음 밭"><img id="icNext" alt=""></button><div id="fLabel"></div><div id="fLock" hidden></div></div></main>
   <nav id="bar">
     <button id="bShop"><img id="icShop" alt="">상점</button>
     <button id="bSell"><img id="icSell" alt="">팔기</button>
@@ -179,7 +206,15 @@ input.name{font:inherit;font-size:14px;border:2px solid var(--line);padding:6px 
 const W = 160, H = 256;
 const SAVE_KEY = 'peach-farm-v1';
 const TREE_POS = [[48,104],[112,104],[48,164],[112,164],[48,224],[112,224]];
-const SLOT_COST = [0,0,40,100,220,450];
+// 밭 3개 x 6자리 = 최대 18그루. 밭을 개척하면 앞 두 자리는 바로 심어져요.
+const FIELDS = [
+  {name:'앞밭',      cost:0},
+  {name:'개울가 밭', cost:900},
+  {name:'언덕 밭',   cost:3000},
+];
+const SLOT_COST = [0,0,40,100,220,450,  0,0,500,650,800,1000,  0,0,1300,1600,2000,2500];
+const P = i => TREE_POS[i%6];
+const fieldOf = i => Math.floor(i/6);
 const STAGE_MIN = [3,8,12,15];          // 단계별 성장 시간(분): 새싹→어린나무→꽃→풋열매→익음
 const WATER_MIN = 90;                    // 물이 다 마르는 시간(분)
 const PRUNE_MIN = 150;                   // 가지가 무성해지는 시간(분)
@@ -197,6 +232,14 @@ const REAL_FARM = {
   thanks: '시원한 냉수 한 잔 감사히 받을게요. 복숭아 잘 키워 볼게요!',
   // 농장 일기: 새 글을 위에 추가하면 '진짜 농장' 버튼에 빨간 점이 떠요.
   // photo에 사진 주소를 넣으면 사진도 보여요 (예: 저장소에 photos 폴더를 만들고 'photos/1.jpg')
+  // 쿠폰 도전: 게임에서 목표를 이루면 진짜 농장 쿠폰 번호를 보여줘요. code를 비워 두면 '달성!'만 표시돼요.
+  // rule은 dex(도감 완성), harvest(누적 수확 500개), cat(고양이 단짝) 중 하나예요.
+  showCoupons: false,   // 쿠폰 도전을 보여주려면 true로 바꿔요
+  coupons: [
+    {rule:'dex',     title:'복숭아 도감 완성',   code:''},
+    {rule:'harvest', title:'복숭아 500개 수확',  code:''},
+    {rule:'cat',     title:'고양이와 단짝 되기', code:''},
+  ],
   diary: [
     {date:'2026-10-12', title:'어린 복숭아나무를 심었어요', text:'올해 처음으로 묘목을 심었어요. 첫 수확까지는 시간이 좀 걸리지만 정성껏 키워 볼게요.', photo:''},
   ],
@@ -244,6 +287,24 @@ const CLIENTS = [
   {who:'읍내 빵집',     line:'복숭아 타르트를 만들 거예요. {v} {n}개 필요해요'},
   {who:'이장님',        line:'마을 잔치에 쓸 {v} {n}개 부탁하네'},
 ];
+// ===== 명절 이벤트 (날짜는 월-일) =====
+// 추석은 해마다 날짜가 바뀌어서 연도별로 적어 둬요. 앞 7일, 뒤 2일 동안 열려요.
+const EVENTS = [
+  {id:'bok',     name:'복날',       from:'07-10', to:'08-20', desc:'이가네 주막에 복날 특별 메뉴 삼계탕이 나와요.'},
+  {id:'chuseok', name:'추석',       dates:{2026:'09-25', 2027:'09-15', 2028:'10-03'}, before:7, after:2,
+   desc:'마을 의뢰판에 하루 한 번 추석 선물세트 의뢰가 들어오고, 밤하늘에 보름달이 떠요.'},
+  {id:'xmas',    name:'크리스마스', from:'12-18', to:'12-26', desc:'눈사람이 놀러 오고 나무에 반짝이 전구가 달려요. 매일 출석하면 선물 50코인도 받아요.'},
+];
+const SAMGYE = {id:'samgye', name:'삼계탕', price:45, desc:'복날 특별 메뉴! 모든 나무에 물 가득, 1시간 동안 성장 1.5배', say:'땀 뻘뻘, 기운이 펄펄 나요!'};
+
+// ===== 나무 나이 (수확 횟수에 따라 자라요) =====
+const TREE_LV = [
+  {min:0,  name:'어린 나무',     bonus:0},
+  {min:5,  name:'튼튼한 나무',   bonus:1},
+  {min:15, name:'어른 나무',     bonus:2},
+  {min:40, name:'할아버지 나무', bonus:3},
+];
+const HONEY_HOURS = 2, HONEY_COINS = 25;   // 꿀벌통에서 꿀이 모이는 시간과 보상
 const CHURU = 10;                         // 고양이 츄르 가격
 const ATT_REWARD = [10,15,20,25,30,40,50]; // 출석 보상 (7일째는 황금 복숭아도)
 
@@ -258,6 +319,7 @@ const UPGRADES = {
   spr:   {name:'스프링클러', desc:'물이 천천히 말라요', cost:[60,160,380]},
   scare: {name:'허수아비',   desc:'새가 덜 찾아와요',   cost:[50,140,320]},
   fert:  {name:'유기농 비료', desc:'나무가 더 빨리 자라요', cost:[80,210,480]},
+  bee:   {name:'꿀벌통',     desc:'꽃 핀 나무에 벌이 날아와 복숭아가 하나 더 열려요. 꿀도 모여요', cost:[250]},
 };
 const FRUIT_POS = [[-7,-21],[5,-23],[-1,-16],[9,-16],[-10,-14],[1,-28],[-5,-27]];
 const PERCH = [[-9,-30],[0,-35],[9,-30],[-13,-22],[13,-22]];
@@ -268,9 +330,9 @@ const irand = (a,b)=>Math.floor(rand(a,b+1));
 const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
 
 // ================= 상태 =================
-function newTree(unlocked){ return {u:unlocked, stage:0, growth:0, water:70, prune:0, fruit:0, golden:false, petCd:0}; }
+function newTree(unlocked){ return {u:unlocked, stage:0, growth:0, water:70, prune:0, fruit:0, golden:false, petCd:0, born:Date.now(), harvests:0}; }
 function newState(){
-  const trees = []; for(let i=0;i<6;i++) trees.push(newTree(i<2));
+  const trees = []; for(let i=0;i<FIELDS.length*6;i++) trees.push(newTree(i<2));
   return {coins:20, peaches:0, gold:0, trees, up:{spr:0,scare:0,fert:0},
     stats:{harvest:0,cats:0,birds:0,gold:0,water:0,prune:0}, last:Date.now(), muted:false, seenHelp:false,
     buff:{grow:0,gold:0,bonus:0}, jumak:{stamps:0,eaten:{}}};
@@ -289,6 +351,10 @@ function normalize(S){
   S.att = S.att || {last:'', count:0};
   S.orders = S.orders || []; S.orderNext = S.orderNext || 0;
   S.deco = S.deco || {};
+  while(S.trees.length < FIELDS.length*6) S.trees.push(newTree(false));
+  S.trees.forEach(t=>{ if(t.u && !t.born) t.born = S.last || Date.now(); t.harvests = t.harvests||0; });
+  S.up.bee = S.up.bee||0; S.honeyAt = S.honeyAt||0; S.evtSeen = S.evtSeen||{}; S.coupon = S.coupon||{};
+  S.fields = S.fields || 1; S.curField = Math.min(S.curField||0, S.fields);
   S.diarySeen = S.diarySeen || ''; S.shopNotice = S.shopNotice || '';
   return S;
 }
@@ -432,6 +498,28 @@ for(const v of VARIETIES){
 const icGift = spr(['..r.r..','...r...','kkkkkkk','kpprppk','kpprppk','kpprppk','kkkkkkk'], {r:'#e0503c',p:'#ffd2e1',k:'#7a4a3a'});
 const icBowl = spr(['k....k','kyyyyk','.kkkk.'], {k:'#7a4a3a',y:'#ffc9a8'});
 const icExcl = spr(['r','r','r','.','r'], {r:'#e0503c'});
+const icBagI = spr(['.kkk.','kwWwk','kwwwk','kwwwk','kwwwk','.kkk.'], {k:'#9a7240',w:'#e8d2a8',W:'#fff3dc'});
+const bagS = spr(['kkk','wWw','www','.w.'], {k:'#9a7240',w:'#e8d2a8',W:'#fff3dc'});
+const bagRipe = spr(['kpk','wWw','www','.w.'], {k:'#9a7240',w:'#e8d2a8',W:'#fff3dc',p:'#ff9a8a'});
+const icStake = spr(['..t..','.ttt.','..t..','rrtrr','..t..','..t..','.ttt.'], {t:'#8b5a3c',r:'#e8c060'});
+const icBug = spr(['.kkkkk.','kpPpPpk','kppppek','.k.k.k.'], {k:'#2b1b1b',p:'#d0609a',P:'#ffb0d0',e:'#2b1b1b'});
+const icHive = spr([
+  '....kkkk....','...kyYyyk...','..kyyyyyyk..','.kkkkkkkkkk.','.kyYyyyyyyk.','kyyyyyyyyyyk',
+  'kkkkkkkkkkkk','kyYyyhhyyyyk','kyyyyhhyyyyk','.kkkkkkkkkk.','.....tt.....','.....tt.....','....tttt....'],
+  {k:'#8a5a10',y:'#f2c04a',Y:'#ffe39a',h:'#3b2a20',t:'#8b5a3c'});
+const icHoney = spr(['.kkk.','kyyyk','kyYyk','kyyyk','.kkk.'], {k:'#8a5a10',y:'#f2b030',Y:'#ffe39a'});
+const icRainbow = spr(['..rrr..','.rooor.','royyyor','oy...yo','y.....y'], {r:'#ff6b6b',o:'#ffb04a',y:'#ffe066'});
+const icSwirl = spr(['.kkk.','k...k','..kk.','.k...','k...k','.kkk.'], {k:'#5a6a80'});
+const icCoupon = spr(['kkkkkkkkk','kpppkpppk','kpppkpppk','kpppkpppk','kkkkkkkkk'], {k:'#d26a5c',p:'#ffd9cc'});
+const icMoonEvt = spr(['..yyy..','.yyyyy.','yyyyyyy','yyyyyyy','yyyyyyy','.yyyyy.','..yyy..'], {y:'#ffe08a'});
+const icTree = spr(['..ggg..','.ggGgg.','ggggggg','.ggggg.','...t...','...t...','..ttt..'], {g:'#6cc35a',G:'#a8e37f',t:'#8b5a3c'});
+const snowman = spr([
+  '...kkk...','..kkkkk..','..wwwww..','.wweweww.','.wwwowww.','..wwwww..','.rrrrrrr.',
+  'wwwwwwwww','wwwwkwwww','wwwwwwwww','wwwwkwwww','.wwwwwww.','..wwwww..'],
+  {k:'#3a3a4a',w:'#ffffff',e:'#2b2b2b',o:'#ff8a3a',r:'#e0503c'});
+FOOD.samgye = spr([
+  '....wwwww.....','..wwWwwwwww...','kbbwwwwwwwwbbk','kbbbwwwwwwbbbk','.kbbbbbbbbbbk.','..kbbbbbbbbk..','...kkkkkkkk...'],
+  {k:'#2a1a12',b:'#5a3a28',w:'#fff1d6',W:'#ffffff'});
 const icChuru = spr(['..kk','.kpk','kppk','kpk.','kk..'], {k:'#7a4a3a',p:'#ffb8c8'});
 
 // 꾸미기 그리기 (g: 그릴 캔버스, x,y: 왼쪽 위)
@@ -579,7 +667,8 @@ function drawBG(t){
   ctx.fillStyle=sk[2]; ctx.fillRect(0,42,W,8);
   if(ph==='night'){
     for(const [x,y] of stars){ if((Math.sin(t*2+x)+1)>0.6){ ctx.fillStyle='#fff7c9'; ctx.fillRect(x,y,1,1);} }
-    ctx.fillStyle='#fff3b0'; ctx.fillRect(126,8,8,8); ctx.fillRect(125,9,10,6); ctx.fillStyle=sk[0]; ctx.fillRect(129,7,7,7);
+    if(evtIs('chuseok')){ ctx.fillStyle='rgba(255,230,150,.25)'; ctx.fillRect(117,2,22,22); ctx.drawImage(icMoonEvt,124,9); ctx.fillStyle='#ffe08a'; ctx.fillRect(122,11,11,3); ctx.fillRect(126,7,3,11); }
+    else { ctx.fillStyle='#fff3b0'; ctx.fillRect(126,8,8,8); ctx.fillRect(125,9,10,6); ctx.fillStyle=sk[0]; ctx.fillRect(129,7,7,7); }
   } else {
     const sx = ph==='day'?128:(ph==='dawn'?22:134), sy= ph==='day'?10:26;
     ctx.fillStyle = ph==='day'?'#fff3a0':'#ffef9a'; ctx.fillRect(sx-4,sy-5,9,11); ctx.fillRect(sx-5,sy-4,11,9);
@@ -590,6 +679,14 @@ function drawBG(t){
       ctx.fillRect(x,y,s*3,s); ctx.fillRect(x+s/2,y-s/2,s*2,s); ctx.fillStyle='#e6f2ff'; ctx.fillRect(x,y+s-1,s*3,1);
     }
   }
+  const wnB=weatherNow();
+  if(wnB==='rainbow' && ph!=='night'){
+    const C=['#ff6b6b','#ffb04a','#ffe066','#8fd26a','#7cc4f5','#b49aff'];
+    for(let k=0;k<C.length;k++){ ctx.fillStyle=C[k]; const r=46-k*2;
+      for(let a=0;a<=Math.PI;a+=0.02){ ctx.fillRect(Math.round(80+Math.cos(a)*r), Math.round(48-Math.sin(a)*r*0.8), 2, 1); } }
+  }
+  if(wnB==='rain' || wnB==='typhoon'){ ctx.fillStyle='rgba(90,100,120,.45)'; ctx.fillRect(0,0,W,50);
+    ctx.fillStyle='#9aa4b4'; for(const c of [[10,6],[60,10],[110,4]]){ ctx.fillRect(c[0],c[1],34,6); ctx.fillRect(c[0]+6,c[1]-3,20,4); } }
   // 언덕
   ctx.fillStyle = ph==='night'?'#3f6a5a':'#b5e59a';
   for(let x=0;x<W;x++){ const h=Math.floor(6+4*Math.sin(x/14)+2*Math.sin(x/5)); ctx.fillRect(x,40-h,1,h+2); }
@@ -730,19 +827,54 @@ function bgmStop(){
 ['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,()=>{ if(!S.bgmOff) bgmStart(); },{passive:true}));
 const buzz=(ms=10)=>{ try{ navigator.vibrate && navigator.vibrate(ms) }catch(e){} };
 
+// ================= 날씨 =================
+function hash32(n){ n=(n^61)^(n>>>16); n=(n+(n<<3))|0; n=n^(n>>>4); n=Math.imul(n,0x27d4eb2d); n=n^(n>>>15); return (n>>>0)/4294967296; }
+let weatherOverride = null, typhoon = null;
+function weatherAt(ms){
+  if(weatherOverride) return weatherOverride==='typhoon' ? 'clear' : weatherOverride;
+  const h=Math.floor(ms/3600000), m=ms-h*3600000;
+  if(hash32(h*7+1)<0.14) return 'rain';
+  if(hash32((h-1)*7+1)<0.14 && m<25*60000 && hash32(h*7+3)<0.7) return 'rainbow';
+  return 'clear';
+}
+function weatherNow(){ if(typhoon && typhoon.phase==='storm') return 'typhoon'; if(weatherOverride==='typhoon') return 'typhoon'; return weatherAt(Date.now()); }
+const stakeNeeded = t => typhoon && typhoon.phase==='warn' && t.u && t.stage>=2 && !t.staked;
+
+// ================= 명절 이벤트 =================
+let eventOverride = null;
+function activeEvent(){
+  if(eventOverride!==null) return EVENTS.find(e=>e.id===eventOverride)||null;
+  const d=new Date(), y=d.getFullYear(), md=String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  for(const e of EVENTS){
+    if(e.from){ if(md>=e.from && md<=e.to) return e; }
+    else if(e.dates && e.dates[y]){ const c=new Date(y+'-'+e.dates[y]+'T00:00:00'); const diff=(new Date(y,d.getMonth(),d.getDate())-c)/864e5;
+      if(diff>=-e.before && diff<=e.after) return e; }
+  }
+  return null;
+}
+const evtIs = id => { const e=activeEvent(); return !!e && e.id===id; };
+
+// ================= 나무 나이 =================
+function treeLevel(t){ let k=0; TREE_LV.forEach((l,i)=>{ if((t.harvests||0)>=l.min) k=i; }); return {i:k, ...TREE_LV[k], next:TREE_LV[k+1]?TREE_LV[k+1].min:0}; }
+function treeName(i){ const t=S.trees[i]; return t.name || `${FIELDS[fieldOf(i)].name} ${i%6+1}번 나무`; }
+const esc = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
 // ================= 성장 로직 =================
 let simNow = Date.now();
 function growTrees(dt, catIdx){
   const growBuff = simNow < S.buff.grow ? 1.5 : 1;
+  const raining = weatherAt(simNow)==='rain';
+  const bugTrees = new Set(bugs.map(b=>b.tree));
   const decay = 100/(WATER_MIN*60) * (1-0.2*S.up.spr);
-  for(let i=0;i<6;i++){
+  for(let i=0;i<S.trees.length;i++){
     const t=S.trees[i]; if(!t.u) continue;
     const catHere = i===catIdx;
-    t.water = Math.max(0, t.water - dt*decay*(catHere?3:1));
+    t.water = raining ? 100 : Math.max(0, t.water - dt*decay*(catHere?3:1));
     if(t.stage>=1) t.prune = Math.min(100, t.prune + dt*100/(PRUNE_MIN*60));
     if(t.petCd>0) t.petCd-=dt;
     if(t.stage<4){
       let rate = 100/(STAGE_MIN[t.stage]*60) * (1+0.25*S.up.fert) * growBuff;
+      if(bugTrees.has(i)) rate*=0.5;
       if(t.water<=0 || catHere) rate=0;
       if(t.prune>=50) rate*=0.4;
       t.growth += rate*dt;
@@ -752,7 +884,9 @@ function growTrees(dt, catIdx){
 }
 function advance(t){
   t.growth=0; t.stage++;
-  if(t.stage===4){ t.fruit = irand(4,6) + (t.prune<30?1:0); t.golden = Math.random() < (simNow < S.buff.gold ? 0.12 : 0.06);
+  if(t.stage===4){ t.fruit = irand(4,6) + (t.prune<30?1:0) + treeLevel(t).bonus + (S.up.bee?1:0);
+    const gch = 0.06 * ((simNow < S.buff.gold ? 2 : 1) + (weatherAt(simNow)==='rainbow' ? 1 : 0));
+    t.golden = Math.random() < gch;
     t.variety = pickVariety(t); t.pets = 0; }
 }
 function simulate(sec){
@@ -785,7 +919,9 @@ function discover(id,n){
 
 // ================= 이벤트: 새 & 고양이 =================
 let birds=[], cat=null, birdTimer=rand(25,45), catTimer=rand(50,90);
-function ripeTrees(){ return S.trees.map((t,i)=>(t.u&&t.stage===4&&t.fruit>0)?i:-1).filter(i=>i>=0); }
+let curField = 0;
+const fieldTrees = f => [0,1,2,3,4,5].map(k=>f*6+k);
+function ripeTrees(){ return fieldTrees(curField).filter(i=>{ const t=S.trees[i]; return t.u&&t.stage===4&&t.fruit>0&&!t.bag; }); }
 function spawnBirds(){
   const ripe=ripeTrees();
   if(ripe.length){
@@ -795,7 +931,7 @@ function spawnBirds(){
     for(let k=0;k<n;k++){
       let p; do{ p=irand(0,PERCH.length-1) }while(used.has(p) && used.size<PERCH.length); used.add(p);
       const fromL=Math.random()<.5;
-      birds.push({x:fromL?-10:W+10, y:rand(4,30), tx:TREE_POS[ti][0]+PERCH[p][0], ty:TREE_POS[ti][1]+PERCH[p][1],
+      birds.push({x:fromL?-10:W+10, y:rand(4,30), tx:P(ti)[0]+PERCH[p][0], ty:P(ti)[1]+PERCH[p][1],
         tree:ti, state:'fly', timer:0, a:rand(0,6), dir:fromL?0:1});
     }
     toast('새가 복숭아를 노려요! 톡 눌러서 쫓아주세요');
@@ -817,7 +953,7 @@ function updateBirds(dt){
       b.timer-=dt;
       if(b.timer<=0){
         const t=S.trees[b.tree];
-        if(t.stage===4 && t.fruit>0){
+        if(t.stage===4 && t.fruit>0 && !t.bag){
           t.fruit--; floatText(b.x,b.y-6,'냠','pink'); burst(b.x,b.y,'spark',3);
           if(t.fruit===0){ t.stage=2; t.growth=0; t.golden=false; toast('새가 복숭아를 다 먹어버렸어요 ㅠㅠ'); }
           if(t.fruit===1 && t.golden){ /* 황금 복숭아는 맨 마지막 */ }
@@ -837,16 +973,92 @@ function flee(b, scared){
   if(scared){ S.stats.birds++; S.coins+=1; floatText(b.x,b.y-8,'짹! +1','gold'); burst(b.x,b.y,'feather',4); sfx('chirp'); }
 }
 
+// ================= 벌레 =================
+let bugs=[], bugTimer=rand(30,60);
+function spawnBug(){
+  const cand=fieldTrees(curField).filter(i=>{ const t=S.trees[i]; return t.u && t.stage>=1 && !bugs.some(b=>b.tree===i); });
+  if(!cand.length || bugs.length>=3) return;
+  const i=cand[irand(0,cand.length-1)], st=S.trees[i].stage;
+  bugs.push({tree:i, field:curField, ox:st===1?rand(-4,4):rand(-9,9), oy:st===1?rand(-20,-13):rand(-31,-15), a:rand(0,6)});
+  if((S.stats.bugs||0)<3) toast('나무에 벌레가 붙었어요! 톡 눌러 잡아 주세요. 놔두면 나무가 천천히 자라요',3200);
+}
+function bugPos(b){ const [x,y]=P(b.tree); return [x+b.ox+Math.sin(b.a*0.7)*1.5, y+b.oy+Math.cos(b.a*0.5)]; }
+function updateBugs(dt){
+  bugs.forEach(b=>b.a+=dt);
+  bugs = bugs.filter(b=>{ const t=S.trees[b.tree]; return t.u && t.stage>=1; });
+  bugTimer-=dt; if(bugTimer<=0){ spawnBug(); bugTimer=rand(35,75); }
+}
+
+// ================= 꿀벌 =================
+const HIVE = [145,86];
+const bees = Array.from({length:3},(_,k)=>({x:HIVE[0]+6,y:HIVE[1]+4,a:k*2.1,tx:0,ty:0,t:0}));
+function updateBees(dt){
+  if(!S.up.bee) return;
+  const flowers=fieldTrees(curField).filter(i=>S.trees[i].u && S.trees[i].stage===2);
+  bees.forEach((b,k)=>{
+    b.a+=dt; b.t-=dt;
+    if(b.t<=0){ b.t=rand(2,5);
+      if(flowers.length && Math.random()<0.8){ const [x,y]=P(flowers[(k+irand(0,9))%flowers.length]); b.tx=x+rand(-10,10); b.ty=y+rand(-30,-14); }
+      else { b.tx=HIVE[0]+rand(-6,12); b.ty=HIVE[1]+rand(-6,6); } }
+    b.x+=(b.tx-b.x)*Math.min(1,dt*1.2)+Math.sin(b.a*9)*0.25; b.y+=(b.ty-b.y)*Math.min(1,dt*1.2)+Math.cos(b.a*11)*0.25;
+  });
+}
+const honeyReady = ()=> S.up.bee && Date.now()>=S.honeyAt;
+function collectHoney(){
+  if(!honeyReady()) { floatText(HIVE[0]+6,HIVE[1]-4,'윙윙','gold'); return; }
+  S.coins+=HONEY_COINS; S.honeyAt=Date.now()+HONEY_HOURS*3600000; S.stats.honey=(S.stats.honey||0)+1;
+  floatText(HIVE[0]+4,HIVE[1]-6,`꿀 +${HONEY_COINS}`,'gold'); burst(HIVE[0]+6,HIVE[1]+4,'spark',8); sfx('coin'); save(); updHud();
+}
+
+// ================= 태풍 =================
+function startTyphoon(){
+  typhoon={phase:'warn', hit:Date.now()+90000}; sfx('no'); buzz(40);
+  toast('태풍이 온대요! 나무를 톡 눌러 지지대를 세워 주세요',4200);
+}
+function typhoonHit(){
+  let hurt=0, safe=0;
+  S.trees.forEach(t=>{ if(!t.u || t.stage<2) return; if(t.staked){ safe++; return; }
+    hurt++; if(t.stage===4) t.fruit=Math.max(1,Math.ceil(t.fruit/2)); else t.growth=Math.max(0,t.growth-60); });
+  S.trees.forEach(t=>t.staked=false);
+  typhoon={phase:'storm', end:Date.now()+25000}; birds.forEach(b=>flee(b,false));
+  S.stats.typhoon=(S.stats.typhoon||0)+1;
+  if(!hurt && safe){ S.coins+=30; toast('지지대 덕분에 모든 나무가 무사해요! (+30코인)',3800); sfx('buy'); }
+  else if(hurt) toast(`태풍에 나무 ${hurt}그루가 흔들려서 열매가 조금 떨어졌어요`,3800);
+  save(); updHud();
+}
+function weatherTick(){
+  const now=Date.now();
+  if(!typhoon){
+    if((curSeason==='summer'||curSeason==='autumn') && S.seenHelp && modalIdle() && !document.hidden
+       && S.trees.some(t=>t.u&&t.stage>=2) && Math.random()<1/2400) startTyphoon();
+  } else if(typhoon.phase==='warn' && now>=typhoon.hit) typhoonHit();
+  else if(typhoon.phase==='storm' && now>=typhoon.end){ typhoon=null; toast('태풍이 지나갔어요. 하늘이 다시 맑아졌어요'); }
+}
+
+// ================= 쿠폰 도전 =================
+const COUPON_RULES = {
+  dex:     {need:()=>VARIETIES.length, have:()=>VARIETIES.filter(v=>S.dex[v.id]).length},
+  harvest: {need:()=>500,              have:()=>S.stats.harvest},
+  cat:     {need:()=>80,               have:()=>S.cat.aff},
+};
+function couponTick(){
+  if(!REAL_FARM.showCoupons) return;
+  for(const c of (REAL_FARM.coupons||[])){
+    const r=COUPON_RULES[c.rule]; if(!r || S.coupon[c.rule]) continue;
+    if(r.have()>=r.need()){ S.coupon[c.rule]=true; S.couponNew=true; save(); toast(`진짜 농장 쿠폰 도전 '${c.title}' 달성! 진짜 농장에서 확인해 보세요`,4000); sfx('buy'); }
+  }
+}
+
 function grassPoint(){ return [rand(14,146), rand(66,248)]; }
 function spawnCat(){
-  const open=S.trees.map((t,i)=>t.u?i:-1).filter(i=>i>=0); if(!open.length) return;
+  const open=fieldTrees(curField).filter(i=>S.trees[i].u); if(!open.length) return;
   const ti=open[irand(0,open.length-1)], fromL=Math.random()<.5;
-  cat={x:fromL?-12:W+12, y:rand(80,236), state:'enter', tree:ti, taps:0, timer:0, play:0, a:0, dir:fromL?0:1, hop:0};
+  cat={x:fromL?-12:W+12, y:rand(80,236), state:'enter', tree:ti, field:curField, taps:0, timer:0, play:0, a:0, dir:fromL?0:1, hop:0};
   catToTree(); toast(S.cat.aff>=50 ? `${catIga()} 놀러 왔어요! 츄르를 주면 좋아해요` : `${catIga()} 놀러 왔어요! 톡톡 눌러 쫓아내거나 츄르를 줘 보세요`, 3000);
   sfx('meow');
 }
 function catToTree(){
-  const [x,y]=TREE_POS[cat.tree]; const side = cat.x < x ? -1 : 1;
+  const [x,y]=P(cat.tree); const side = cat.x < x ? -1 : 1;
   cat.tx = x+side*17; cat.ty = y+4; cat.state='enter';
 }
 function moveCat(dt, sp){
@@ -858,12 +1070,12 @@ function moveCat(dt, sp){
 function updateCat(dt){
   if(!cat) return;
   cat.a+=dt;
-  if(S.cat.aff>=80 && !cat.prey && ['sleep','happy','pause'].includes(cat.state)){
+  if(S.cat.aff>=80 && !cat.prey && cat.field===curField && ['sleep','happy','pause'].includes(cat.state)){
     const b=birds.find(b=>b.state==='peck');
-    if(b){ cat.prey=b; cat.state='hunt'; cat.tx=clamp(b.x,14,146); cat.ty=TREE_POS[b.tree][1]+4; }
+    if(b){ cat.prey=b; cat.state='hunt'; cat.tx=clamp(b.x,14,146); cat.ty=P(b.tree)[1]+4; }
   }
   if(cat.state==='enter'){
-    if(moveCat(dt,24)){ cat.state='sleep'; cat.timer=45; cat.dir = cat.x<TREE_POS[cat.tree][0]?0:1; }
+    if(moveCat(dt,24)){ cat.state='sleep'; cat.timer=45; cat.dir = cat.x<P(cat.tree)[0]?0:1; }
   } else if(cat.state==='sleep'){
     cat.timer-=dt;
     if(cat.timer<=0){
@@ -878,7 +1090,7 @@ function updateCat(dt){
     cat.play-=dt;
   } else if(cat.state==='pause'){
     cat.timer-=dt; cat.play-=dt;
-    if(cat.play<=0){ const open=S.trees.map((t,i)=>t.u?i:-1).filter(i=>i>=0); cat.tree=open[irand(0,open.length-1)]; catToTree(); }
+    if(cat.play<=0){ const open=fieldTrees(cat.field).filter(i=>S.trees[i].u); cat.tree=open[irand(0,open.length-1)]; catToTree(); }
     else if(cat.timer<=0){ const [x,y]=grassPoint(); cat.tx=x; cat.ty=y; cat.state='dash'; cat.hop=0; }
   } else if(cat.state==='eat'){
     cat.timer-=dt; if(Math.random()<dt*2.5) burst(cat.x,cat.y-10,'heart',1);
@@ -928,10 +1140,10 @@ function iga(s){ const c=s.charCodeAt(s.length-1); if(c<0xAC00||c>0xD7A3) return
 function catIga(){ return S.cat.name ? iga(S.cat.name) : '고양이가'; }
 let gifts=[];
 function dropGift(chance){ if(!cat || Math.random()>chance) return;
-  gifts.push({x:clamp(cat.x+(cat.dir?-9:9),10,150), y:cat.y, c:irand(5,15), a:0});
+  gifts.push({x:clamp(cat.x+(cat.dir?-9:9),10,150), y:cat.y, c:irand(5,15), a:0, field:cat.field});
   toast(`${catIga()} 선물을 두고 갔어요. 톡 눌러 열어 보세요`); }
 function feedCat(){
-  if(!cat || cat.fed || cat.state==='leave') return;
+  if(!cat || cat.fed || cat.state==='leave' || cat.field!==curField) return;
   if(S.coins<CHURU){ toast(`츄르는 ${CHURU}코인이에요`); sfx('no'); return; }
   S.coins-=CHURU; const before=catLevel().i;
   S.cat.aff=Math.min(100,S.cat.aff+8); S.cat.fed=(S.cat.fed||0)+1;
@@ -943,33 +1155,58 @@ function feedCat(){
 
 // ================= 탭 처리 =================
 function treeAt(x,y){
-  for(let i=0;i<6;i++){ const [tx,ty]=TREE_POS[i]; if(x>tx-17&&x<tx+17&&y>ty-42&&y<ty+7) return i; }
+  if(curField>=S.fields) return -1;
+  for(let k=0;k<6;k++){ const [tx,ty]=TREE_POS[k]; if(x>tx-17&&x<tx+17&&y>ty-42&&y<ty+7) return curField*6+k; }
   return -1;
 }
+function nextSlot(){
+  for(let i=0;i<S.fields*6;i++) if(!S.trees[i].u) return {kind:'slot', i, cost:SLOT_COST[i]};
+  if(S.fields<FIELDS.length) return {kind:'field', f:S.fields, cost:FIELDS[S.fields].cost};
+  return null;
+}
+function buySlot(i){
+  const c=SLOT_COST[i]; if(S.coins<c){ toast(`새 나무 자리는 ${c}코인이 필요해요`); sfx('no'); return false; }
+  S.coins-=c; S.trees[i]=newTree(true); sfx('buy'); toast(`${FIELDS[fieldOf(i)].name}에 새 복숭아나무를 심었어요`); save(); return true;
+}
+function buyField(){
+  if(S.fields>=FIELDS.length) return;
+  const n={f:S.fields, cost:FIELDS[S.fields].cost};
+  if(S.coins<n.cost){ toast(`${FIELDS[n.f].name}을 개척하려면 ${n.cost}코인이 필요해요`); sfx('no'); return; }
+  S.coins-=n.cost; S.fields++; S.trees[n.f*6]=newTree(true); S.trees[n.f*6+1]=newTree(true);
+  sfx('buy'); buzz(25); toast(`${FIELDS[n.f].name}을 개척했어요! 나무 두 그루를 심었어요`,3000);
+  if(curField===n.f) for(const k of [0,1]){ const [x,y]=TREE_POS[k]; burst(x,y,'spark',12); }
+  save(); updHud(); updField();
+}
 function tapTree(i){
-  const t=S.trees[i], [x,y]=TREE_POS[i];
+  const t=S.trees[i], [x,y]=P(i);
   if(!t.u){
-    const next=S.trees.findIndex(t=>!t.u);
-    if(i!==next){ toast('앞쪽 자리부터 차례로 열 수 있어요'); return; }
-    const cost=SLOT_COST[i];
-    if(S.coins<cost){ toast(`새 나무 자리는 ${cost}코인이 필요해요`); sfx('no'); return; }
-    S.coins-=cost; S.trees[i]=newTree(true); sfx('buy'); burst(x,y,'spark',10);
-    floatText(x,y-14,'새싹 심기!','green'); toast('새 복숭아나무를 심었어요'); save(); return;
+    const n=nextSlot();
+    if(!n || n.kind!=='slot' || n.i!==i){ toast('앞쪽 자리부터 차례로 열 수 있어요'); return; }
+    if(buySlot(i)){ burst(x,y,'spark',10); floatText(x,y-14,'새싹 심기!','green'); }
+    return;
   }
   t.shake=.35;
   if(t.stage===4 && t.fruit>0){
     const g = t.golden?1:0; let n=t.fruit-g; const vid = VAR[t.variety]?t.variety:'baekdo';
     let extra = 0; if(S.buff.bonus>0){ extra=2; n+=2; S.buff.bonus--; }
-    S.inv[vid]=(S.inv[vid]||0)+n; S.gold+=g; S.stats.harvest+=t.fruit+extra; S.stats.gold+=g;
+    let bagged=0; if(t.bag){ bagged=2; n+=2; }
+    S.inv[vid]=(S.inv[vid]||0)+n; S.gold+=g; S.stats.harvest+=t.fruit+extra+bagged; S.stats.gold+=g;
+    const lvBefore=treeLevel(t).i; t.harvests=(t.harvests||0)+1; const lvAfter=treeLevel(t);
+    if(lvAfter.i>lvBefore) setTimeout(()=>toast(`${treeName(i)}가 ${lvAfter.name}로 자랐어요! 이제 복숭아가 ${lvAfter.bonus}개 더 열려요`,3800),600);
     discover(vid,n); if(g) discover('gold',g);
     birds.forEach(b=>{ if(b.tree===i && b.state!=='flee') flee(b,false); });
-    floatText(x,y-30,`+${n} ${VAR[vid].name}`+(g?' +황금!':'')+(extra?' (새우 덕분)':''), g?'gold':'pink');
+    floatText(x,y-30,`+${n} ${VAR[vid].name}`+(g?' +황금!':'')+(bagged?' (봉지 덕분)':extra?' (새우 덕분)':''), g?'gold':'pink');
     burst(x,y,'spark',10); sfx('harvest'); buzz(20);
-    t.stage=2; t.growth=0; t.fruit=0; t.golden=false; t.variety=null;
+    t.stage=2; t.growth=0; t.fruit=0; t.golden=false; t.variety=null; t.bag=false;
+  } else if(stakeNeeded(t)){
+    t.staked=true; S.stats.stakes=(S.stats.stakes||0)+1; burst(x,y,'dust',8); floatText(x,y-34,'지지대 쿵!','green'); sfx('cut'); buzz(15);
   } else if(t.water<70){
     t.water=100; S.stats.water++; burst(x,y,'water',16); floatText(x,y-34,'촉촉','blue'); sfx('water');
   } else if(t.stage>=1 && t.prune>=35){
     t.prune=0; S.stats.prune++; burst(x,y,'leaf',12); floatText(x,y-34,'싹둑','green'); sfx('cut');
+  } else if(t.stage===3 && !t.bag){
+    t.bag=true; S.stats.bags=(S.stats.bags||0)+1; floatText(x,y-34,'봉지 씌우기','');  burst(x,y-20,'spark',5); sfx('pet');
+    if(S.stats.bags<=2) setTimeout(()=>toast('봉지를 씌운 복숭아는 새가 못 먹고, 수확할 때 2개 더 얻어요'),300);
   } else if(t.petCd<=0){
     if(t.stage<4){ t.growth=Math.min(99,t.growth+5); }
     t.petCd=15; t.pets=(t.pets||0)+1; burst(x,y-20,'heart',3); floatText(x,y-34,'쑥쑥','pink'); sfx('pet');
@@ -981,14 +1218,18 @@ function tapTree(i){
 cvs.addEventListener('pointerdown',e=>{
   e.preventDefault();
   const r=cvs.getBoundingClientRect(), x=(e.clientX-r.left)/r.width*W, y=(e.clientY-r.top)/r.height*H;
-  for(const gf of gifts){ if(Math.hypot(gf.x-x,gf.y-4-y)<10){ gifts=gifts.filter(o=>o!==gf); S.coins+=gf.c; floatText(gf.x,gf.y-12,'선물 +'+gf.c,'gold'); burst(gf.x,gf.y,'spark',8); sfx('coin'); updHud(); save(); return; } }
+  for(const gf of gifts){ if(gf.field===curField && Math.hypot(gf.x-x,gf.y-4-y)<10){ gifts=gifts.filter(o=>o!==gf); S.coins+=gf.c; floatText(gf.x,gf.y-12,'선물 +'+gf.c,'gold'); burst(gf.x,gf.y,'spark',8); sfx('coin'); updHud(); save(); return; } }
+  for(const b of bugs){ if(b.field!==curField) continue; const [bx,by]=bugPos(b);
+    if(Math.hypot(bx-x,by-y)<8){ bugs=bugs.filter(o=>o!==b); S.coins+=2; S.stats.bugs=(S.stats.bugs||0)+1;
+      floatText(bx,by-6,'톡! +2','green'); burst(bx,by,'dust',6); sfx('cut'); buzz(12); updHud(); save(); return; } }
   // 새 먼저
   let best=null, bd=11;
   for(const b of birds){ if(b.state==='flee') continue; const d=Math.hypot(b.x-x,b.y-y); if(d<bd){bd=d;best=b;} }
   if(best){ flee(best,true); updHud(); return; }
-  if(cat && cat.state!=='leave' && x>cat.x-13 && x<cat.x+13 && y>cat.y-17 && y<cat.y+4){ tapCat(); updHud(); return; }
+  if(cat && cat.field===curField && cat.state!=='leave' && x>cat.x-13 && x<cat.x+13 && y>cat.y-17 && y<cat.y+4){ tapCat(); updHud(); return; }
   if(x<23 && y>44 && y<78){ renderOrders(); return; }
   if(S.deco.mailbox && x>143 && x<159 && y>54 && y<74){ renderReal(); return; }
+  if(S.up.bee && x>138 && x<159 && y>72 && y<101){ collectHoney(); return; }
   if(S.deco.pond && x>66 && x<94 && y>234 && y<250){ burst(80,244,'water',10); floatText(80,236,'퐁당','blue'); sfx('water'); return; }
   const i=treeAt(x,y); if(i>=0){ tapTree(i); updHud(); }
 });
@@ -1012,14 +1253,15 @@ function bubble(x,y,icon,t){
   ctx.drawImage(icon, bx-Math.floor(icon.width/2), by-Math.floor(icon.height/2));
 }
 function drawTreeSlot(i,t,time){
-  const [x,y]=TREE_POS[i], tr=S.trees[i];
+  const [x,y]=P(i), tr=S.trees[i];
   if(!tr.u){
     soil(x,y,false,true);
-    const next=S.trees.findIndex(t=>!t.u);
-    if(i===next){
+    const n=nextSlot();
+    if(fieldOf(i)>=S.fields){ weeds(x,y,i); }
+    else if(n && n.kind==='slot' && n.i===i){
       ctx.fillStyle='#7a4a3a'; ctx.fillRect(x-1,y-14,2,12);
       ctx.fillRect(x-12,y-23,24,11); ctx.fillStyle='#f6dcb4'; ctx.fillRect(x-11,y-22,22,9);
-      ctx.drawImage(icCoin,x-10,y-21); drawNum(SLOT_COST[i],x+4,y-20);
+      ctx.drawImage(icCoin,x-10,y-21); drawNum(SLOT_COST[i],x+3,y-20);
     } else {
       ctx.fillStyle='#a08870'; ctx.fillRect(x-1,y-3,3,1); ctx.fillRect(x,y-4,1,3);
     }
@@ -1030,16 +1272,29 @@ function drawTreeSlot(i,t,time){
     if(Math.floor(time*2+i)%6===0){ ctx.fillStyle='#bfe6ff'; ctx.fillRect(x+11,y-10,1,1); ctx.fillRect(x+18,y-10,1,1); ctx.fillRect(x+15,y-11,1,1);} }
   let sx=0;
   if(tr.shake>0){ tr.shake-=1/60; sx=Math.round(Math.sin(tr.shake*40)*1.5); }
+  if(weatherNow()==='typhoon' && tr.stage>=1) sx += Math.round(Math.sin(time*18+i)*(tr.staked?0.6:1.6));
   const dry = tr.water<15, messy = tr.stage>=1 && tr.prune>=50;
+  if(tr.staked){ RR(ctx,x+5,y-22,2,24,'#8b5a3c'); RR(ctx,x+5,y-22,1,24,'#a8714c'); RR(ctx,x+2,y-14,6,1,'#e8c060'); }
   ctx.drawImage(treeImg(tr.stage,dry,messy), x-24+sx, y-48);
-  if(tr.stage===4){
+  const lv=treeLevel(tr).i; if(lv>0){ const c=['','#c98a4a','#c8d0d8','#ffd84a'][lv]; RR(ctx,x-15,y+1,3,3,'#5a3428'); RR(ctx,x-14,y+2,1,1,c); RR(ctx,x-15,y+1,3,1,c); }
+  if(evtIs('xmas') && tr.stage>=1){ const C=['#ff5a5a','#ffe066','#7cd4ff','#9aff8a']; BLOSSOM.slice(0,tr.stage===1?3:9).forEach(([bx,by],k)=>{
+    if((Math.floor(time*2)+k)%3) { const sc=tr.stage===1?0.55:1; RR(ctx,x+Math.round(bx*sc)+sx,y+Math.round(by*sc)+(tr.stage===1?-3:0),1,1,C[k%4]); } }); }
+  if(tr.bag && tr.stage===3){ for(const [fx_,fy] of FRUIT_POS.slice(0,5)) ctx.drawImage(bagS, x+fx_-1+sx, y+fy-2); }
+  if(tr.stage===4 && tr.bag){
+    for(let k=0;k<tr.fruit && k<FRUIT_POS.length;k++){ const [fx_,fy]=FRUIT_POS[k]; ctx.drawImage(k===0&&tr.golden?fruitG:bagRipe, x+fx_-1+sx, y+fy-2); }
+  } else if(tr.stage===4){
     for(let k=0;k<tr.fruit && k<FRUIT_POS.length;k++){
       const [fx_,fy]=FRUIT_POS[k]; ctx.drawImage(k===0&&tr.golden?fruitG:(VAR_IMG[tr.variety]||VAR_IMG.baekdo).fruit, x+fx_-2+sx, y+fy-2);
     }
   }
 }
+function weeds(x,y,i){
+  const C=['#5a9a48','#7cc35e','#4c8a3e'];
+  for(let k=0;k<7;k++){ const wx=x-10+((k*7+i*3)%21), h=3+((k*5+i)%4);
+    ctx.fillStyle=C[k%3]; ctx.fillRect(wx,y-h,1,h); ctx.fillRect(wx-1,y-h+1,1,1); ctx.fillRect(wx+1,y-h+2,1,1); }
+}
 function drawCat(t){
-  if(!cat) return;
+  if(!cat || cat.field!==curField) return;
   const moving = cat.state==='enter'||cat.state==='dash'||cat.state==='leave'||cat.state==='hunt';
   let img;
   if(moving) img = (Math.floor(cat.a*(cat.state==='enter'?6:12))%2?CAT.A:CAT.B)[cat.dir];
@@ -1049,6 +1304,8 @@ function drawCat(t){
   if(cat.state==='sleep') hy = Math.floor(t*1.5)%2 ? 0 : -0; // 숨쉬기
   ctx.fillStyle='rgba(60,90,40,.35)'; ctx.fillRect(Math.round(cat.x)-7,Math.round(cat.y)-1,14,2);
   ctx.drawImage(img, Math.round(cat.x)-8, Math.round(cat.y)-img.height+hy);
+  if(evtIs('xmas')){ const hx=Math.round(cat.x)-8+(cat.dir?1:10), hy2=Math.round(cat.y)-img.height+hy-2;
+    RR(ctx,hx,hy2+1,5,2,'#e0503c'); RR(ctx,hx+1,hy2,3,1,'#e0503c'); RR(ctx,hx+(cat.dir?0:4),hy2-1,1,1,'#ffffff'); RR(ctx,hx,hy2+2,5,1,'#ffffff'); }
   if(cat.state==='eat') ctx.drawImage(icBowl, Math.round(cat.x)+(cat.dir?-14:8), Math.round(cat.y)-3);
   if(cat.state==='sleep'){ const p=(t%2)/2; ctx.globalAlpha=1-p; ctx.drawImage(zzz, Math.round(cat.x)+(cat.dir?-10:6), Math.round(cat.y)-14-Math.round(p*6)); ctx.globalAlpha=1; }
   if(cat.state==='pause' || cat.state==='dash'){ // 남은 탭 표시
@@ -1063,28 +1320,46 @@ function drawBird(b){
 function render(t){
   drawBG(t);
   const ents=[];
-  for(let i=0;i<6;i++) ents.push({y:TREE_POS[i][1], d:()=>drawTreeSlot(i,S.trees[i],t)});
+  for(const i of fieldTrees(curField)) ents.push({y:P(i)[1], d:()=>drawTreeSlot(i,S.trees[i],t)});
   if(S.up.scare>0) ents.push({y:136, d:()=>ctx.drawImage(scarecrow,75,121)});
-  if(cat) ents.push({y:cat.y, d:()=>drawCat(t)});
+  if(cat && cat.field===curField) ents.push({y:cat.y, d:()=>drawCat(t)});
   ents.push({y:74, d:()=>{ drawBoard(ctx,3,58); }});
+  if(S.up.bee) ents.push({y:HIVE[1]+13, d:()=>ctx.drawImage(icHive,HIVE[0],HIVE[1])});
+  if(evtIs('xmas')) ents.push({y:166, d:()=>ctx.drawImage(snowman,75,153)});
   if(S.deco.pinwheel) ents.push({y:72, d:()=>DECO_DRAW.pinwheel(ctx,76,58,t)});
   if(S.deco.mailbox) ents.push({y:72, d:()=>DECO_DRAW.mailbox(ctx,148,58)});
   if(S.deco.jang) ents.push({y:197, d:()=>DECO_DRAW.jang(ctx,71,186)});
   if(S.deco.pond) ents.push({y:244, d:()=>DECO_DRAW.pond(ctx,70,238,t)});
-  for(const gf of gifts) ents.push({y:gf.y, d:()=>{ gf.a+=0.05; ctx.drawImage(icGift, Math.round(gf.x)-3, Math.round(gf.y)-7+Math.round(Math.sin(gf.a*3))); }});
+  for(const gf of gifts.filter(g=>g.field===curField)) ents.push({y:gf.y, d:()=>{ gf.a+=0.05; ctx.drawImage(icGift, Math.round(gf.x)-3, Math.round(gf.y)-7+Math.round(Math.sin(gf.a*3))); }});
   ents.sort((a,b)=>a.y-b.y).forEach(e=>e.d());
-  for(let i=0;i<6;i++){
-    const tr=S.trees[i]; if(!tr.u) continue; const [x,y]=TREE_POS[i];
+  for(const i of fieldTrees(curField)){
+    const tr=S.trees[i]; if(!tr.u) continue; const [x,y]=P(i);
     const top = tr.stage===0 ? y-20 : tr.stage===1 ? y-32 : y-44;
     let icon=null;
     if(tr.stage===4 && tr.fruit>0) icon = tr.golden?icGold:(VAR_IMG[tr.variety]||VAR_IMG.baekdo).icon;
+    else if(stakeNeeded(tr)) icon=icStake;
     else if(tr.water<35) icon=icDrop;
     else if(tr.stage>=1 && tr.prune>=50) icon=icScis;
+    else if(tr.stage===3 && !tr.bag) icon=icBagI;
     if(icon) bubble(x+11, top, icon, t);
   }
+  for(const b of bugs){ if(b.field!==curField) continue; const [bx,by]=bugPos(b); ctx.drawImage(icBug, Math.round(bx)-3, Math.round(by)-2); }
+  if(S.up.bee){ for(const b of bees){ const bx=Math.round(b.x), by=Math.round(b.y);
+      RR(ctx,bx,by,2,2,'#ffd84a'); RR(ctx,bx+1,by,1,2,'#3a2a20'); if(Math.floor(t*20+b.a)%2) RR(ctx,bx,by-1,1,1,'#ffffff'); }
+    if(honeyReady()) bubble(139,81,icHoney,t); }
   if(ordersAttention()) bubble(11,48,icExcl,t);
   for(const b of birds) drawBird(b);
   drawWeather();
+  const wn=weatherNow();
+  if(wn==='rain' || wn==='typhoon'){
+    ctx.fillStyle = wn==='typhoon' ? 'rgba(50,60,80,.30)' : 'rgba(70,90,120,.16)'; ctx.fillRect(0,0,W,H);
+    if(curSeason!=='winter' || wn==='typhoon'){
+      const n = wn==='typhoon' ? 70 : 40, sl = wn==='typhoon' ? 3 : 1;
+      ctx.fillStyle = 'rgba(200,225,255,.75)';
+      for(let k=0;k<n;k++){ const sp=(k*37%11)+9; const yy=((t*sp*14+k*53)%(H+20))-10, xx=((k*61+t*sp*sl*6)%(W+20))-10;
+        ctx.fillRect(Math.round(xx),Math.round(yy),1,3); if(sl>1) ctx.fillRect(Math.round(xx)+1,Math.round(yy)+3,1,2); }
+    } else { ctx.fillStyle='#ffffff'; for(let k=0;k<45;k++){ const yy=((t*12+k*53)%(H+10))-5, xx=(k*61+Math.sin(t+k)*6)%W; ctx.fillRect(Math.round(xx),Math.round(yy),2,2); } }
+  }
   for(const p of parts){
     if(p.img){ ctx.globalAlpha=Math.min(1,p.life*2); ctx.drawImage(p.img,Math.round(p.x)-2,Math.round(p.y)-2); ctx.globalAlpha=1; }
     else { ctx.fillStyle=p.col; ctx.fillRect(Math.round(p.x),Math.round(p.y),p.s,p.s); }
@@ -1106,7 +1381,7 @@ function updHud(){
   $('coins').textContent=S.coins; $('peaches').textContent=peachCount(); $('golds').textContent=S.gold;
   $('goldStat').hidden = S.gold<=0 && S.stats.gold<=0;
   $('bInfo').classList.toggle('new', !!S.dexNew);
-  $('bReal').classList.toggle('new', latestDiary()>S.diarySeen);
+  $('bReal').classList.toggle('new', latestDiary()>S.diarySeen || (REAL_FARM.showCoupons && !!S.couponNew));
   $('icSound').src = asURL(S.muted?icSpkOff:icSpk); $('icMusic').src = asURL(S.bgmOff?icNoteOff:icNote);
 }
 function updClock(){ const d=new Date(), ph={dawn:'새벽',day:'낮',dusk:'노을',night:'밤'}[skyPhase()];
@@ -1115,7 +1390,9 @@ function updClock(){ const d=new Date(), ph={dawn:'새벽',day:'낮',dusk:'노�
 function openModal(title, html){ $('mTitle').textContent=title; $('mBody').innerHTML=html; $('modal').hidden=false; }
 let modalQueue=[];
 function nextModal(){ const f=modalQueue.shift(); if(f) f(); }
-function closeModal(){ $('modal').hidden=true; if(modalQueue.length) setTimeout(nextModal,180); }
+let pendingNext=false;
+const modalIdle = ()=> $('modal').hidden && !pendingNext && !modalQueue.length;
+function closeModal(){ $('modal').hidden=true; if(modalQueue.length){ pendingNext=true; setTimeout(()=>{ pendingNext=false; nextModal(); },180); } }
 $('mClose').onclick=closeModal;
 $('modal').addEventListener('pointerdown',e=>{ if(e.target.id==='modal') closeModal(); });
 
@@ -1124,7 +1401,7 @@ function sellAll(){
   if(v<=0){ toast('팔 복숭아가 없어요. 익은 나무를 톡 눌러 수확해요'); sfx('no'); return 0; }
   S.coins+=v; S.inv={}; S.gold=0; sfx('coin'); floatText(W/2,H/2,'+'+v+' 코인','gold'); save(); updHud(); return v;
 }
-const upIcons = {spr:asURL(icDrop), scare:asURL(scarecrow), fert:asURL(icSprout)};
+const upIcons = {spr:asURL(icDrop), scare:asURL(scarecrow), fert:asURL(icSprout), bee:asURL(icHive)};
 function tabs(list, cur, attr){ return `<div class="tabs">${list.map(([k,l])=>`<button data-${attr}="${k}" class="${k===cur?'on':''}">${l}</button>`).join('')}</div>`; }
 function renderShop(tab){
   tab = tab || 'farm';
@@ -1136,10 +1413,11 @@ function renderShop(tab){
     h += `<div class="row"><img src="${asURL(icPeach)}" alt=""><div class="t"><b>복숭아 팔기</b>
       <small>${detail||'팔 복숭아가 없어요'}${S.gold?`, 황금 ${S.gold}`:''}${decoCount()?` (꾸미기 덕분에 +${decoCount()*5}%)`:''}</small></div>
       <button class="btn" data-a="sell" ${v?'':'disabled'}>${coin}${v}</button></div>`;
-    const next=S.trees.findIndex(t=>!t.u);
-    h += `<div class="row"><img src="${asURL(treeImg(4,false,false))}" alt="" style="object-fit:contain"><div class="t"><b>나무 자리 늘리기</b>
-      <small>${next<0?'모든 자리에 나무가 있어요':`복숭아나무 ${next+1}번째 그루`}</small></div>
-      ${next<0?'':`<button class="btn" data-a="slot" ${S.coins>=SLOT_COST[next]?'':'disabled'}>${coin}${SLOT_COST[next]}</button>`}</div>`;
+    const n=nextSlot(), planted=S.trees.filter(t=>t.u).length;
+    const lbl = !n ? '모든 밭에 나무가 가득해요' : n.kind==='slot' ? `${FIELDS[fieldOf(n.i)].name}에 ${planted+1}번째 나무 심기` : `새 밭 개척: ${FIELDS[n.f].name} (나무 2그루 포함)`;
+    h += `<div class="row"><img src="${asURL(treeImg(4,false,false))}" alt="" style="object-fit:contain"><div class="t"><b>${n&&n.kind==='field'?'밭 개척하기':'나무 자리 늘리기'}</b>
+      <small>${lbl} (지금 ${planted}/${S.trees.length}그루)</small></div>
+      ${!n?'':`<button class="btn" data-a="slot" ${S.coins>=n.cost?'':'disabled'}>${coin}${n.cost}</button>`}</div>`;
     for(const k in UPGRADES){
       const u=UPGRADES[k], lv=S.up[k], max=lv>=u.cost.length;
       h += `<div class="row"><img src="${upIcons[k]}" alt=""><div class="t"><b>${u.name}</b> <span class="lv">Lv ${lv}/${u.cost.length}</span>
@@ -1160,15 +1438,15 @@ function renderShop(tab){
   $('mBody').querySelectorAll('button[data-a]').forEach(b=>b.onclick=()=>{
     const a=b.dataset.a;
     if(a==='sell') sellAll();
-    else if(a==='slot'){ const n=S.trees.findIndex(t=>!t.u); if(n>=0&&S.coins>=SLOT_COST[n]){ S.coins-=SLOT_COST[n]; S.trees[n]=newTree(true); sfx('buy'); toast('새 복숭아나무를 심었어요'); } }
-    else if(a==='up'){ const k=b.dataset.k, c=UPGRADES[k].cost[S.up[k]]; if(S.coins>=c){ S.coins-=c; S.up[k]++; sfx('buy'); toast(UPGRADES[k].name+' 레벨업!'); } }
+    else if(a==='slot'){ const n=nextSlot(); if(n && n.kind==='slot') buySlot(n.i); else if(n) buyField(); }
+    else if(a==='up'){ const k=b.dataset.k, c=UPGRADES[k].cost[S.up[k]]; if(S.coins>=c){ S.coins-=c; S.up[k]++; sfx('buy'); if(k==='bee'){ S.honeyAt=Date.now()+HONEY_HOURS*3600000; toast('꿀벌통을 놓았어요! 오른쪽 위에서 벌들이 날아다녀요',3200); } else toast(UPGRADES[k].name+' 레벨업!'); } }
     else if(a==='deco'){ const d=DECOS.find(x=>x.id===b.dataset.k); if(d && !S.deco[d.id] && S.coins>=d.price){ S.coins-=d.price; S.deco[d.id]=true; sfx('buy'); toast(`${d.name}을(를) 설치했어요!`); } }
     save(); updHud(); renderShop(tab);
   });
 }
 function renderInfo(tab){
   tab = tab || 'dex';
-  let h = tabs([['dex','도감'],['cat','고양이'],['rec','기록']], tab, 'tab');
+  let h = tabs([['dex','도감'],['tree','나무'],['cat','고양이'],['rec','기록']], tab, 'tab');
   if(tab==='dex'){
     S.dexNew=false;
     const found = VARIETIES.filter(v=>S.dex[v.id]).length;
@@ -1192,14 +1470,26 @@ function renderInfo(tab){
     for(const l of CAT_LV.slice(1)) h += `<div class="perk ${S.cat.aff>=l.min?'on':''}">호감도 ${l.min}: ${l.perk}</div>`;
     if(S.cat.aff>=20) h += `<p style="margin-top:12px;display:flex;gap:6px;align-items:center"><input class="name" id="catName" maxlength="8" placeholder="이름" value="${S.cat.name||''}">
       <button class="btn" id="catSave" style="flex-direction:row">이름 짓기</button></p>`;
+  } else if(tab==='tree'){
+    h += `<p style="margin:0 0 4px">오래 키운 나무일수록 복숭아가 더 많이 열려요. 이름도 지어 줄 수 있어요.</p>
+      <p class="small" style="margin:0">${TREE_LV.slice(1).map(l=>`수확 ${l.min}번: ${l.name} (+${l.bonus}개)`).join(', ')}</p>`;
+    for(let f=0;f<S.fields;f++){
+      h += `<div class="fhead">${FIELDS[f].name}</div>`;
+      for(const i of fieldTrees(f)){ const t=S.trees[i]; if(!t.u) continue; const lv=treeLevel(t), days=Math.max(1,Math.floor((Date.now()-(t.born||Date.now()))/864e5)+1);
+        h += `<div class="row"><img src="${asURL(icTree)}" alt=""><div class="t"><b>${esc(treeName(i))}</b> <span class="lv">${lv.name}</span>
+          <small>심은 지 ${days}일째, 수확 ${t.harvests||0}번${lv.next?`, 다음 단계까지 ${lv.next-(t.harvests||0)}번`:''}</small></div>
+          <button class="btn" data-tn="${i}" style="flex-direction:row">이름</button></div>`; }
+    }
   } else {
-    const st=S.stats, trees=S.trees.filter(t=>t.u);
-    const list = trees.map((t,i)=>`${i+1}번 나무: ${STAGE_NAME[t.stage]}${t.stage<4?` ${Math.floor(t.growth)}%`:` (${t.fruit}개)`}, 물 ${Math.round(t.water)}%`).join('<br>');
+    const st=S.stats;
+    const list = FIELDS.slice(0,S.fields).map((F,f)=>`<b>${F.name}</b><br>`+fieldTrees(f).filter(i=>S.trees[i].u).map(i=>{ const t=S.trees[i];
+      return `${i%6+1}번 나무: ${STAGE_NAME[t.stage]}${t.stage<4?` ${Math.floor(t.growth)}%`:` (${t.fruit}개)`}, 물 ${Math.round(t.water)}%`; }).join('<br>')).join('<br>');
     h += `<div class="help">
       <p>수확한 복숭아 <b>${st.harvest}</b>개, 황금 복숭아 <b>${st.gold}</b>개<br>
       쫓아낸 고양이 <b>${st.cats}</b>마리, 쫓아낸 새 <b>${st.birds}</b>마리<br>
       물 준 횟수 <b>${st.water}</b>, 가지치기 <b>${st.prune}</b><br>
-      들어준 의뢰 <b>${st.orders||0}</b>개, 출석 <b>${S.att.count}</b>일째</p>
+      들어준 의뢰 <b>${st.orders||0}</b>개, 출석 <b>${S.att.count}</b>일째<br>
+      잡은 벌레 <b>${st.bugs||0}</b>마리, 봉지 <b>${st.bags||0}</b>장, 이겨낸 태풍 <b>${st.typhoon||0}</b>번, 모은 꿀 <b>${st.honey||0}</b>통</p>
       <p style="opacity:.8">${list}</p>
       <p><button class="btn" id="hHelp" style="display:inline-flex;flex-direction:row">도움말 보기</button>
       <button class="btn danger" id="hReset" style="display:inline-flex;flex-direction:row;margin-left:6px">처음부터</button></p></div>`;
@@ -1207,11 +1497,18 @@ function renderInfo(tab){
   openModal('농장 수첩', h);
   updHud();
   $('mBody').querySelectorAll('button[data-tab]').forEach(b=>b.onclick=()=>renderInfo(b.dataset.tab));
+  $('mBody').querySelectorAll('button[data-tn]').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.tn, row=b.closest('.row');
+    row.querySelector('.t').innerHTML=`<input class="name" id="tnIn" maxlength="8" placeholder="나무 이름" value="${esc(S.trees[i].name||'')}">`;
+    b.textContent='저장'; const inp=$('tnIn'); inp.focus();
+    const done=()=>{ S.trees[i].name=inp.value.trim().slice(0,8); save(); renderInfo('tree'); };
+    b.onclick=done; inp.onkeydown=e=>{ if(e.key==='Enter') done(); };
+  });
   if($('catSave')) $('catSave').onclick=()=>{ const v=$('catName').value.trim().slice(0,8); S.cat.name=v; save(); toast(v?`고양이 이름을 '${v}'(으)로 지었어요`:'이름을 지웠어요'); renderInfo('cat'); };
   if($('hHelp')) $('hHelp').onclick=showHelp;
   let armed=false;
   if($('hReset')) $('hReset').onclick=e=>{ if(!armed){ armed=true; e.target.textContent='정말요? 한 번 더'; return; }
-    S=normalize(newState()); S.seenHelp=true; S.att.last=todayKey(); birds=[]; cat=null; gifts=[]; initOrders(); save(); updHud(); closeModal(); toast('새 농장을 시작했어요'); };
+    S=normalize(newState()); S.seenHelp=true; curField=0; fieldKey=''; bugs=[]; typhoon=null; S.att.last=todayKey(); birds=[]; cat=null; gifts=[]; initOrders(); save(); updHud(); closeModal(); toast('새 농장을 시작했어요'); };
 }
 function showHelp(){
   const I=(c,t)=>`<div class="ico"><img src="${asURL(c)}" alt="">${t}</div>`;
@@ -1220,8 +1517,11 @@ function showHelp(){
     ${I(icDrop,'물 주기')}${I(icScis,'가지치기 (가지가 무성하면 천천히 자라요)')}${I(icPeach,'수확하기')}
     <p style="margin-top:8px">할 일이 없을 땐 쓰담쓰담 하면 조금 더 자라요.</p>
     <p>노란 얼룩 고양이가 나무 옆에서 낮잠을 자면 그 나무가 안 자라요. 세 번 톡톡 눌러 쫓아내거나, 츄르를 줘서 친해져 보세요. 단짝이 되면 새도 대신 쫓아 줘요.</p>
-    <p>새는 익은 복숭아를 쪼아 먹어요. 눌러서 쫓아내세요.</p>
-    <p>계절마다 다른 품종이 열려요. 수첩 도감을 채워 보세요.</p>
+    <p>새는 익은 복숭아를 쪼아 먹어요. 눌러서 쫓아내세요. 풋복숭아 때 봉지를 씌우면 새가 못 먹고 수확할 때 2개 더 얻어요.</p>
+    <p>가끔 나무에 벌레가 붙어요. 톡 눌러 잡아 주세요.</p>
+    <p>비 오는 날엔 물이 저절로 채워지고, 무지개가 뜨면 황금 복숭아가 잘 열려요. 태풍 예보가 오면 나무를 눌러 지지대를 세워 주세요.</p>
+    <p>코인이 모이면 새 밭을 개척할 수 있어요. 화면 양옆 화살표로 밭을 오가요. 화살표에 빨간 점이 뜨면 그쪽 밭에 할 일이 있다는 뜻이에요.</p>
+    <p>계절마다 다른 품종이 열려요. 수첩 도감을 채워 보세요. 오래 키운 나무일수록 복숭아가 더 열리고, 수첩에서 나무 이름도 지어 줄 수 있어요.</p>
     <p>왼쪽 위 의뢰판을 누르면 마을 사람들의 부탁을 볼 수 있어요.</p>
     <p>모은 코인으로 이가네 주막에서 막걸리, 파전, 새우구이, 바베큐를 먹으면 농사에 도움이 되는 효과가 생겨요. 매일 출석 보상과 오늘의 메뉴 할인도 있어요.</p>
     <p>앱을 꺼 둬도 나무는 계속 자라요. 물이 마르면 성장이 멈추니 가끔 들러 주세요.</p>
@@ -1300,6 +1600,7 @@ function showInstallGuide(){
 function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function dayNum(){ const d=new Date(); return d.getFullYear()*372+d.getMonth()*31+d.getDate(); }
 const specialId = ()=>MENU[dayNum()%MENU.length].id;
+const allMenu = ()=> evtIs('bok') ? [...MENU, SAMGYE] : MENU;
 const menuPrice = m => m.id===specialId() ? Math.round(m.price*0.6) : m.price;
 function minsLeft(ts){ return Math.max(0, Math.ceil((ts-Date.now())/60000)); }
 function renderBuffs(){
@@ -1307,6 +1608,12 @@ function renderBuffs(){
   if(Date.now()<S.buff.grow) h+=`<span class="buff"><img src="${asURL(FOOD.bbq,2)}" alt="">성장↑ ${minsLeft(S.buff.grow)}분</span>`;
   if(Date.now()<S.buff.gold) h+=`<span class="buff"><img src="${asURL(FOOD.makgeolli,2)}" alt="">황금↑ ${minsLeft(S.buff.gold)}분</span>`;
   if(S.buff.bonus>0) h+=`<span class="buff"><img src="${asURL(FOOD.shrimp,2)}" alt="">수확+2 ${S.buff.bonus}번</span>`;
+  const wn=weatherNow();
+  if(typhoon && typhoon.phase==='warn') h+=`<span class="buff" style="border-color:#c0392b;background:#ffe3dc"><img src="${asURL(icSwirl,2)}" alt="">태풍까지 ${Math.max(0,Math.ceil((typhoon.hit-Date.now())/1000))}초! 지지대</span>`;
+  else if(wn==='typhoon') h+=`<span class="buff"><img src="${asURL(icSwirl,2)}" alt="">태풍이 지나가는 중</span>`;
+  else if(wn==='rain') h+=`<span class="buff"><img src="${asURL(icDrop,2)}" alt="">${curSeason==='winter'?'함박눈':'비'} (물 자동)</span>`;
+  else if(wn==='rainbow') h+=`<span class="buff"><img src="${asURL(icRainbow,2)}" alt="">무지개 (황금↑)</span>`;
+  const ev=activeEvent(); if(ev) h+=`<span class="buff"><img src="${asURL(ev.id==='xmas'?snowman:ev.id==='bok'?FOOD.samgye:icMoonEvt,2)}" alt="">${ev.name} 이벤트</span>`;
   if(el.innerHTML!==h){ el.innerHTML=h; fit(); }
 }
 function renderJumak(){
@@ -1316,7 +1623,7 @@ function renderJumak(){
     <div>어서 오시게! 농사일에 고생 많았지?</div>
     <small style="opacity:.75">단골 도장 ${st}/10 (다 모으면 서비스 30코인)</small>
     <div class="stamps">${Array.from({length:10},(_,i)=>`<i class="${i<st?'on':''}"></i>`).join('')}</div></div></div>`;
-  for(const m of MENU){
+  for(const m of allMenu()){
     const p=menuPrice(m), sp=p!==m.price;
     h+=`<div class="row"><img src="${asURL(FOOD[m.id])}" alt="" style="object-fit:contain"><div class="t"><b>${m.name}</b>${sp?'<span class="badge">오늘의 메뉴</span>':''}
       <small>${m.desc}</small></div>
@@ -1326,13 +1633,14 @@ function renderJumak(){
   $('mBody').querySelectorAll('button[data-m]').forEach(b=>b.onclick=()=>eat(b.dataset.m));
 }
 function eat(id){
-  const m=MENU.find(x=>x.id===id); if(!m || S.coins<menuPrice(m)){ sfx('no'); return; }
+  const m=allMenu().find(x=>x.id===id); if(!m || S.coins<menuPrice(m)){ sfx('no'); return; }
   S.coins-=menuPrice(m);
   const now=Date.now();
   if(id==='makgeolli') S.buff.gold = Math.max(now,S.buff.gold) + 30*60000;
   if(id==='bbq') S.buff.grow = Math.max(now,S.buff.grow) + 60*60000;
   if(id==='shrimp') S.buff.bonus += 3;
-  if(id==='pajeon') S.trees.forEach((t,i)=>{ if(t.u){ t.water=100; burst(TREE_POS[i][0],TREE_POS[i][1],'water',8);} });
+  if(id==='samgye'){ S.buff.grow = Math.max(now,S.buff.grow) + 60*60000; }
+  if(id==='pajeon' || id==='samgye') S.trees.forEach((t,i)=>{ if(t.u){ t.water=100; if(fieldOf(i)===curField) burst(P(i)[0],P(i)[1],'water',8);} });
   S.jumak.stamps++; S.jumak.eaten[id]=(S.jumak.eaten[id]||0)+1;
   let service='';
   if(S.jumak.stamps%10===0){ S.coins+=30; service='<p>단골 도장을 다 모았어요! 사장님이 30코인을 챙겨 주셨어요.</p>'; }
@@ -1356,9 +1664,15 @@ function renderReal(){
       <div class="acct"><code id="acctNo">${F.account}</code><button class="btn" id="rCopy" style="flex-direction:row">복사</button></div>
       <div style="opacity:.8;margin-top:6px">${F.thanks}</div>
     </div>
+    ${(F.showCoupons&&F.coupons&&F.coupons.length)?`<div class="diary"><b>쿠폰 도전</b><p class="small" style="margin:2px 0 4px">게임에서 목표를 이루면 진짜 농장에서 쓸 수 있는 쿠폰을 드려요.</p>
+      ${F.coupons.map((c,k)=>{ const r=COUPON_RULES[c.rule]; if(!r) return ''; const need=r.need(), have=Math.min(need,r.have()), done=have>=need;
+        return `<div class="cp"><img src="${asURL(icCoupon)}" alt=""><div class="t"><div>${esc(c.title)}</div><div class="bar"><i style="width:${Math.round(have/need*100)}%"></i></div>
+          <small>${done?(c.code?'쿠폰 번호: '+esc(c.code):'달성! 쿠폰은 판매가 시작되면 여기서 열려요'):`${have} / ${need}`}</small></div>
+          ${done&&c.code?`<button class="btn" data-cp="${k}">복사</button>`:''}</div>`; }).join('')}</div>`:''}
     ${(F.diary&&F.diary.length)?`<div class="diary"><b>농장 일기</b>${[...F.diary].sort((a,b)=>a.date<b.date?1:-1).map(e=>`<div class="diary-e">
       <small>${e.date}</small><div>${e.title||''}</div><div style="opacity:.8;font-size:12px">${e.text||''}</div>${e.photo?`<img src="${e.photo}" alt="" loading="lazy">`:''}</div>`).join('')}</div>`:''}`);
-  S.diarySeen = latestDiary(); save(); updHud();
+  S.diarySeen = latestDiary(); S.couponNew=false; save(); updHud();
+  $('mBody').querySelectorAll('button[data-cp]').forEach(b=>b.onclick=()=>{ const c=F.coupons[+b.dataset.cp]; copyText(c.code, '쿠폰 번호를 복사했어요'); });
   $('rBuy').onclick=()=>{
     if(F.shopUrl){ openOutside(F.shopUrl); return; }
     $('rSoon').hidden=false; sfx('pet');
@@ -1383,6 +1697,7 @@ function doAttendance(){
   const idx=(S.att.count-1)%7, c=ATT_REWARD[idx];
   S.coins+=c; let msg=`${c}코인을 받았어요!`;
   if(idx===6){ S.gold+=1; S.stats.gold++; discover('gold',1); msg=`황금 복숭아 1개와 ${c}코인을 받았어요!`; }
+  if(evtIs('xmas')){ S.coins+=50; msg+=' 크리스마스 선물로 50코인도 더 받았어요!'; }
   save(); updHud();
   const sp=MENU.find(m=>m.id===specialId());
   openModal(`출석 ${S.att.count}일째`, `<div class="att">${ATT_REWARD.map((r,i)=>`<div class="${i<idx?'on':''} ${i===idx?'today':''}">${i+1}일<br>${i===6?'황금+'+r:r}</div>`).join('')}</div>
@@ -1402,6 +1717,11 @@ function newOrder(){
 }
 function initOrders(){ S.orders=[newOrder(),newOrder()]; S.orderNext=Date.now()+60*60000; S.ordersNew=true; }
 function refillOrders(){
+  if(evtIs('chuseok') && S.chuseokDay!==todayKey()){
+    S.chuseokDay=todayKey(); S.ordersNew=true;
+    S.orders.push({id:'cs'+Date.now().toString(36), who:'이장님', line:'추석 선물세트로 {v} {n}개를 보내고 싶네. 넉넉히 쳐 주겠네!', want:'any', n:15, reward:260, special:true});
+    save();
+  }
   if(S.orders.length<3 && Date.now()>=S.orderNext){ S.orders.push(newOrder()); S.orderNext=Date.now()+90*60000; S.ordersNew=true; save(); }
 }
 const haveFor = o => o.want==='any' ? peachCount() : (S.inv[o.want]||0);
@@ -1413,7 +1733,7 @@ function renderOrders(){
   if(!S.orders.length) h+='<p>지금은 부탁이 없어요.</p>';
   for(const o of S.orders){
     const hv=haveFor(o), ok=hv>=o.n;
-    h+=`<div class="order"><div class="who">${o.who}</div><div class="line">"${orderText(o)}"</div>
+    h+=`<div class="order"><div class="who">${o.who}${o.special?'<span class="badge">추석</span>':''}</div><div class="line">"${orderText(o)}"</div>
       <div class="act"><img src="${asURL(o.want==='any'?icPeach:VAR_IMG[o.want].icon)}" alt=""><span>${Math.min(hv,o.n)} / ${o.n}</span>
       <button class="btn" data-o="${o.id}" ${ok?'':'disabled'}><img src="${asURL(icCoin)}" alt="">${o.reward} 받고 건네기</button>
       <button class="skip" data-x="${o.id}">거절</button></div></div>`;
@@ -1436,6 +1756,14 @@ function fillOrder(id){
   sfx('coin'); buzz(15); toast(`${o.who}: 고마워요! (+${o.reward}코인)`); save(); updHud(); renderOrders();
 }
 
+function checkEvent(){
+  const e=activeEvent(); if(!e) return;
+  const key=e.id+new Date().getFullYear(); if(S.evtSeen[key]) return;
+  S.evtSeen[key]=1; save();
+  modalQueue.push(()=>{ openModal(`${e.name} 이벤트가 열렸어요`, `<div class="eat"><img src="${asURL(e.id==='xmas'?snowman:e.id==='bok'?FOOD.samgye:icMoonEvt,8)}" alt="" style="width:80px">
+    <p style="margin:12px 0 6px">${e.desc}</p><button class="btn wide" id="evOk">좋아요</button></div>`); $('evOk').onclick=closeModal; });
+  if($('modal').hidden && !pendingNext) nextModal();
+}
 function copyText(text,msg){
   const done=()=>{ toast(msg); sfx('coin'); };
   const fallback=()=>{ const ta=document.createElement('textarea'); ta.value=text; ta.setAttribute('readonly','');
@@ -1443,6 +1771,43 @@ function copyText(text,msg){
     let ok=false; try{ ok=document.execCommand('copy') }catch(e){} ta.remove(); ok?done():toast('복사가 안 되면 번호를 길게 눌러 복사해 주세요'); };
   if(navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done,fallback); else fallback();
 }
+// ================= 밭 이동 =================
+const icArrowR = spr(['k....','kk...','kyk..','kyyk.','kyyyk','kyyk.','kyk..','kk...','k....'], {k:'#5a3428',y:'#ff9a80'});
+$('icNext').src=asURL(icArrowR); $('icPrev').src=asURL(flip(icArrowR));
+function fieldNeeds(f){
+  if(f>=S.fields) return false;
+  if(cat && cat.field===f && cat.state==='sleep') return true;
+  if(bugs.some(b=>b.field===f)) return true;
+  return fieldTrees(f).some(i=>{ const t=S.trees[i]; return t.u && ((t.stage===4&&t.fruit>0) || t.water<35 || (t.stage>=1&&t.prune>=50) || stakeNeeded(t)); });
+}
+function goField(f){
+  const maxF=Math.min(S.fields, FIELDS.length-1);
+  f=clamp(f,0,maxF); if(f===curField) return;
+  curField=f; S.curField=f; birds=[]; parts=[]; sfx('pet'); save(); updField();
+}
+let fieldKey='';
+function updField(){
+  const maxF=Math.min(S.fields, FIELDS.length-1);
+  const prevNeed = [...Array(curField).keys()].some(fieldNeeds);
+  const nextNeed = [...Array(FIELDS.length).keys()].filter(f=>f>curField).some(fieldNeeds);
+  const locked=curField>=S.fields, cost=locked?FIELDS[curField].cost:0;
+  const key=[curField,S.fields,maxF,prevNeed,nextNeed,locked,locked&&S.coins>=cost].join();
+  if(key===fieldKey) return; fieldKey=key;
+  $('fPrev').hidden = curField<=0; $('fNext').hidden = curField>=maxF;
+  $('fPrev').classList.toggle('new',prevNeed); $('fNext').classList.toggle('new',nextNeed);
+  $('fLabel').innerHTML = `${FIELDS[curField].name}${locked?' (빈 땅)':''} ${FIELDS.map((_,f)=>f<=maxF?`<i class="${f===curField?'on':''}"></i>`:'').join('')}`;
+  const L=$('fLock');
+  if(locked){
+    L.hidden=false;
+    L.innerHTML = `<b>${FIELDS[curField].name}</b><small>풀만 무성한 빈 땅이에요.<br>개척하면 복숭아나무 두 그루를 바로 심어 줘요.</small>
+      <button class="btn" id="fBuy" ${S.coins>=cost?'':'disabled'}><img src="${asURL(icCoin)}" alt="">${cost} 개척하기</button>`;
+    $('fBuy').onclick=buyField;
+  } else L.hidden=true;
+}
+$('fPrev').onclick=()=>goField(curField-1);
+$('fNext').onclick=()=>goField(curField+1);
+curField = S.curField||0;
+
 const catBtn=$('catBtn');
 catBtn.innerHTML=`<img src="${asURL(icChuru)}" alt="">츄르 주기 <img src="${asURL(icCoin)}" alt="">${CHURU}`;
 catBtn.onclick=feedCat;
@@ -1462,14 +1827,15 @@ function update(dt){
   simNow = Date.now(); growTrees(dt, catTree());
   birdTimer-=dt; if(birdTimer<=0){ spawnBirds(); birdTimer=rand(45,90)*(1+0.6*S.up.scare); }
   catTimer-=dt; if(catTimer<=0){ if(!cat) spawnCat(); catTimer = S.cat.aff>=80 ? rand(60,120) : rand(90,180); }
-  updateBirds(dt); updateCat(dt);
-  const showCB = !!(cat && !cat.fed && ['enter','sleep','pause','dash'].includes(cat.state));
+  updateBirds(dt); updateCat(dt); updateBugs(dt); updateBees(dt);
+  const showCB = !!(cat && cat.field===curField && !cat.fed && ['enter','sleep','pause','dash'].includes(cat.state));
   if(catBtn.hidden===showCB) catBtn.hidden=!showCB;
   for(const p of parts){ p.life-=dt; p.vy+=p.g*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; }
   parts=parts.filter(p=>p.life>0);
   saveT+=dt; if(saveT>5){ saveT=0; save(); }
-  clockT+=dt; if(clockT>1){ clockT=0; curSeason=season(); refillOrders(); updClock(); updHud(); renderBuffs();
-    if(attendanceDue() && $('modal').hidden && S.seenHelp) doAttendance(); }
+  clockT+=dt; if(clockT>1){ clockT=0; curSeason=season(); weatherTick(); couponTick(); refillOrders(); updClock(); updHud(); renderBuffs(); updField();
+    if(S.seenHelp && Math.random()<0.02) checkEvent();
+    if(attendanceDue() && modalIdle() && S.seenHelp) doAttendance(); }
 }
 function welcomeBack(sec){
   const r=simulate(sec);
@@ -1493,9 +1859,10 @@ addEventListener('pagehide',save);
 
 // 시작
 welcomeBack((Date.now()-S.last)/1000);
-fit(); updHud(); updClock();
+fit(); updHud(); updClock(); updField();
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
 if(!S.orders.length && !S.orderNext) initOrders();
+if(S.seenHelp) checkEvent();
 if(!S.seenHelp) modalQueue.push(showHelp);
 if(!S.installSeen && !isStandalone && !isApp && (isIOS || isKakao || (isAndroid && isInApp))) modalQueue.push(showInstallGuide);
 if(attendanceDue()) modalQueue.push(doAttendance);
@@ -1503,7 +1870,7 @@ if(REAL_FARM.shopUrl && S.shopNotice!==REAL_FARM.shopUrl) modalQueue.push(showSh
 nextModal();
 requestAnimationFrame(frame);
 if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
-window.__peach = {S:()=>S, cat:()=>cat, birds:()=>birds, gifts:()=>gifts, setSeason:s=>{seasonOverride=s;curSeason=s;}, feedCat, newOrder, spawnCat:()=>{ if(!cat) spawnCat(); }, spawnBirds, ripe:()=>{ S.trees.forEach(t=>{ if(t.u){t.stage=3;advance(t);} }); }};
+window.__peach = {S:()=>S, bugs:()=>bugs, spawnBug, setWeather:w=>{weatherOverride=w}, setEvent:e=>{eventOverride=e}, startTyphoon, typhoonHit, ty:()=>typhoon, checkEvent, couponTick, goField, buyField, field:()=>curField, cat:()=>cat, birds:()=>birds, gifts:()=>gifts, setSeason:s=>{seasonOverride=s;curSeason=s;}, feedCat, newOrder, spawnCat:()=>{ if(!cat) spawnCat(); }, spawnBirds, ripe:()=>{ S.trees.forEach(t=>{ if(t.u){t.stage=3;advance(t);} }); }};
 </script>
 </body>
 </html>
