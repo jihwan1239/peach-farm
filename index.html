@@ -293,7 +293,7 @@ const VARIETIES = [
   {id:'snow',      name:'눈꽃복숭아', seasons:['winter'], w:4, price:14, pal:['#e8f4ff','#ffffff','#a8c8f0'], desc:'겨울에만 열리는 신비한 복숭아'},
   {id:'heart',     name:'하트복숭아', seasons:[], w:0, price:20, pal:['#ff8fb0','#ffe0ea','#e0507a'], desc:'쓰담쓰담을 많이 받은 나무에 가끔 열려요'},
   {id:'catpeach',  name:'냥복숭아',   seasons:[], w:0, price:25, pal:['#fffaf2','#ffffff','#ffd257'], desc:'고양이와 단짝이 되면 가끔 열려요'},
-  {id:'sshong',    name:'쑝복숭아',   seasons:[], w:0, price:30, secret:true, pal:['#ff9ab4','#fff0f4','#e0507a'], desc:'세상에서 제일 달콤한 복숭아. 이 농장이 시작된 이유'},
+  {id:'sshong',    name:'비밀 복숭아',   seasons:[], w:0, price:30, secret:true, pal:['#ff9ab4','#fff0f4','#e0507a'], desc:'세상에서 제일 달콤한 복숭아. 이 농장이 시작된 이유'},
   {id:'gold',      name:'황금 복숭아', seasons:[], w:0, price:60, pal:['#ffd84a','#fff8c2','#e8a923'], desc:'아주 드물게 열리는 빛나는 복숭아'},
 ];
 const VAR = {}; VARIETIES.forEach(v=>VAR[v.id]=v);
@@ -414,11 +414,11 @@ const QUESTS = [
 ];
 const QUEST_COINS = 15, CHEST_COINS = 60;
 
-// ===== 비밀 이스터에그 (쑝) =====
-// 나무나 고양이 이름을 아래 이름 중 하나로 지으면 농장에 특별한 일이 생겨요.
-// 편지는 비밀번호로 잠겨 있어요. 편지와 비밀번호를 바꾸려면 letter-maker.html로 새로 만들어 lock, letter를 바꿔 넣어요.
+// ===== 비밀 =====
+// 자세한 설명은 SECRETS.md (저장소에 올리지 않는 파일)
 const SSHONG = {
-  names: ['소영','쑝','이소영','소영이','쑝이','쏘영'],
+  names: [['1h31zno','1moeyk9'], ['13g9rfu','19dk4sz'], ['8is46','5rmv9j'], ['13djnk4','1xjb54p'], ['1ypqhw6','1xbh1jb'], ['1fh06y0','1msaed']],
+  txt: {peach:'UzMvXrRVnSpE3f9M', card:'UzMvWZpUmiZNEYF7yGCrinolY+rGJw==', reveal:'UyQ+WZ9hnT9d2u5sXWC2o30CY+3RCmRaa2gzgcNcOiFxo6dxpvjORNrwrMLr5vp8ZzidULxcwgqLPH5eiXb81DC2J4BvwNOz6FqrhYE3CwIx', dad1:'UyQ+WZ9hnT9dEYZR6WaWi30yfyBWZhtuAPF/2eswh0Hx08BA9kSeNslwYLTtv4t06j65bLx/xsHNOzoihCZYo5byR5cncA==', dad2:'UzoeWJJUUUlahIZA0GC2o306cyGaFi4BadQyrdOQTCb9pKd5ZESZI/VwYLPouLBY6jiOWLtG2w26PLIilA+T/pS2Mahv+cJ2', dad3:'UwUyWJ54nT9d2uVMXWaTvnotUyGaExoBadDgE7AhP0HM+wwxyMieNeW8LqKy4ZrUIVaQP99+egqPMX5frXHl9D4=', letterFrom:'UyQ+WZ9hnTV529hEXWC7j7ZdabmaLQ4=', letterTo:'UyQ+WZ9hnTV529hE'},
   hint: '우리 둘만 아는 네 자리 숫자',
   lock: '1m0jhhe',
   letter: 'gU7kHSQPwzAH4O0OKRlraJnN0Yr+ArnutCz/NNwROtEQElwElAyAxPCzpFVnqk0WZjJqIASYOeijPbiV1kRvdhMRaAJLDTOpcxjGNJyGQ48mWImdm4KkO+DlS6RBiB0GMk2bpWHZIpF5hvZulv0BuKr6TL5YQqeyvcz+86rIWfUZCxJ8sVIUjgPPhg8ZeO0/VwBfb8Q37uuQEpNj+DG+fhx4ufA+1lisn3wdLvu+qCvvTKkLsO/a0p/iMJrRAb2ziOefXShaQ6mXpN7tWzh/Wx2qleQbHg2JmHA0FVF28lGtR2dIMZfB3kGYIWgJuhYCppQw25kZuYoOmEnTY7thVQgAo0Pto64mgyo20qYKBRgfUuG3duRUHbYG4E14DiEkCa7qMUfjV88D6zwDEi1fTWUj7PwsfXSSbAxBClmDtry7U2TeccL1m4sjNcPNpdsoNeOGH6eGjlmLu1ClTIUeMNRjHud99RNZaRgrR33KMFFrteMsEeU0AHaY0uSacppoZGUsGClCKj/rZXl+5EOKLBQIO86DCdfNmPhE2Gq18gGnUwlYZeogrpfw6jX2ktHeYKNqAT0y8teELwACao2Pg6kwXzXQgVZJ',
@@ -1470,7 +1470,7 @@ async function shareFarm(){
   g.fillStyle='#ffe3d6'; g.fillRect(0,0,cw,ch);
   g.fillStyle='#5a3428'; g.textAlign='center';
   g.font=`30px ${F}`; g.fillText('이가네 복숭아', cw/2, 46);
-  g.font=`19px ${F}`; g.fillStyle='#c0504a'; g.fillText(S.ss&&S.ss.found ? `Lv ${L.lv} 쑝이네 복숭아밭` : `Lv ${L.lv} ${titleOf(L.lv)}의 복숭아밭`, cw/2, 78);
+  g.font=`19px ${F}`; g.fillStyle='#c0504a'; g.fillText(S.ss&&S.ss.found ? `Lv ${L.lv} ${ssT('card',titleOf(L.lv)+'의 복숭아밭')}` : `Lv ${L.lv} ${titleOf(L.lv)}의 복숭아밭`, cw/2, 78);
   g.fillStyle='#7a4a3a'; g.fillRect(pad-6,top-6,W*sc+12,H*sc+12+6);
   g.drawImage(cvs, pad, top, W*sc, H*sc);
   const found=DEX_VARS.filter(v=>S.dex[v.id]).length, planted=S.trees.filter(t=>t.u).length;
@@ -1492,9 +1492,19 @@ async function shareFarm(){
   if($('shCopy')) $('shCopy').onclick=()=>copyText(url,'게임 주소를 복사했어요. 카톡에 붙여 넣어 보내 보세요');
 }
 
-// ================= 비밀 이스터에그 (쑝) =================
+// ================= 비밀 =================
 let ssFx = 0, dad = null;
-const ssName = n => SSHONG.names.includes(String(n||'').replace(/\s/g,''));
+function ssName(n){
+  const v=String(n||'').replace(/\s/g,''), e=SSHONG.names.find(a=>a[0]===ssKey(v+'#name').toString(36)); if(!e) return false;
+  S.ss=S.ss||{}; S.ss.k=(parseInt(e[1],36)^ssKey(v+'#k'))>>>0; return true;
+}
+function ssT(id, fb){
+  const k=S.ss&&S.ss.k, b=SSHONG.txt[id]; if(!k||!b) return fb||'';
+  const bin=atob(b), out=new Uint8Array(bin.length); let x=k;
+  for(let i=0;i<bin.length;i++){ x^=x<<13; x^=x>>>17; x^=x<<5; x>>>=0; out[i]=bin.charCodeAt(i)^(x&255); }
+  return new TextDecoder().decode(out);
+}
+function ssApply(){ const n=ssT('peach'); if(n) VAR.sshong.name=n; }
 const ssDay = ()=> SSHONG.dates.includes(todayKey().slice(5));
 const ssGlow = ()=> Date.now()<ssFx || ssDay();
 function ssKey(str){ let h=2166136261; for(const ch of str){ h^=ch.charCodeAt(0); h=Math.imul(h,16777619); } return h>>>0; }
@@ -1510,13 +1520,13 @@ function ssTrigger(kind, i){
   S.ss.found = true; S.ss.unread = SSHONG.showLetter && (S.ss.unread || first);
   if(kind==='tree') S.trees[i].heart = true;
   if(kind==='cat') S.cat.bow = true;
-  ssFx = Date.now()+9000; save();
+  ssFx = Date.now()+9000; ssApply(); save();
   closeModal(); sfx('harvest'); buzz([20,60,20,60,40]);
   for(let k=0;k<6;k++) setTimeout(()=>burst(rand(20,140),rand(70,220),'heart',4), k*250);
   ssMusic();
   if(first){
     setTimeout(()=>{ openModal('어, 이 이름은...!', `<div class="eat"><img src="${asURL(VAR_IMG.sshong.icon,8)}" alt="" style="width:64px">
-      <p style="font-size:15px;margin:12px 0 6px">이 복숭아밭은 사실,<br>소영이네 아버지가 처음 심으신 복숭아나무에서 시작됐어요.</p>
+      <p style="font-size:15px;margin:12px 0 6px">이 복숭아밭은 사실,<br>${ssT('reveal','소중한 사람의 복숭아나무에서 시작됐어요.')}</p>
       <p class="small" style="margin:0 0 8px">그래서 이 이름을 부르면 농장이 조금 특별해져요.${SSHONG.showLetter?'<br>울타리 위에 분홍 편지가 하나 도착했어요.':'<br>밭에 누가 찾아왔는지 둘러보세요.'}</p>
       <button class="btn wide pink" id="ssOk">${SSHONG.showLetter?'편지 보러 가기':'좋아요'}</button></div>`);
       $('ssOk').onclick=()=>{ closeModal(); if(SSHONG.showLetter) setTimeout(openLetter,250); }; spawnDad(true); }, 1600);
@@ -1533,32 +1543,32 @@ function updateDad(dt){
   if(dad.life<=0 || dad.x<-14) dad=null;
 }
 const DAD_LINES = [
-  '소영이 왔구나! 아빠가 제일 잘 익은 걸로 골라 놨다.',
-  '올해 복숭아는 유난히 달다. 다 우리 소영이 덕분이지.',
-  '지환이도 같이 왔나? 둘이 사이좋게 나눠 먹어라.',
+  ()=>ssT('dad1','왔구나! 제일 잘 익은 걸로 골라 놨다.'),
+  ()=>ssT('dad2','올해 복숭아는 유난히 달다.'),
+  ()=>ssT('dad3','둘이 사이좋게 나눠 먹어라.'),
   '나무는 정성 들인 만큼 열매를 맺는단다.',
   '이 밭이 다 너희들 놀이터다. 언제든 놀러 와라.',
 ];
 function talkDad(){
   const gift = S.ss.dadDay!==todayKey();
-  const line = DAD_LINES[(S.ss.dadTalk||0)%DAD_LINES.length]; S.ss.dadTalk=(S.ss.dadTalk||0)+1;
+  let line = DAD_LINES[(S.ss.dadTalk||0)%DAD_LINES.length]; if(typeof line==='function') line=line(); S.ss.dadTalk=(S.ss.dadTalk||0)+1;
   if(gift){ S.ss.dadDay=todayKey(); S.inv.sshong=(S.inv.sshong||0)+3; discover('sshong',3); gainXP(10); }
   save(); updHud(); sfx('pet');
   openModal('이가네 농장 아저씨', `<div class="eat"><img src="${asURL(dadNpc,6)}" alt="" style="width:60px;height:72px">
     <p style="font-size:15px;margin:12px 0 6px">"${line}"</p>
-    ${gift?`<p class="small" style="margin:0 0 6px">쑝복숭아 3개를 받았어요</p>`:''}<button class="btn wide" id="dadOk">고맙습니다!</button></div>`);
+    ${gift?`<p class="small" style="margin:0 0 6px">${VAR.sshong.name} 3개를 받았어요</p>`:''}<button class="btn wide" id="dadOk">고맙습니다!</button></div>`);
   $('dadOk').onclick=closeModal;
   if(dad) dad.life=Math.min(dad.life,8);
 }
 function openLetter(){
-  openModal('소영에게 온 편지', `<div class="eat"><img src="${asURL(icEnvelope,7)}" alt="" style="width:63px">
+  openModal(ssT('letterFrom','분홍 편지'), `<div class="eat"><img src="${asURL(icEnvelope,7)}" alt="" style="width:63px">
     <p style="margin:12px 0 4px">편지가 잠겨 있어요</p><p class="small" style="margin:0 0 10px">힌트: ${esc(SSHONG.hint)}</p>
     <input class="ss-in" id="ssCode" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="····">
     <button class="btn wide pink" id="ssGo" style="margin-top:12px">열어 보기</button></div>`);
   const go=()=>{ const v=$('ssCode').value.trim(), txt=ssOpen(v);
     if(txt===null){ const el=$('ssCode'); el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); sfx('no'); buzz(40); toast('다시 한번 생각해 봐요'); return; }
     S.ss.unread=false; S.ss.read=(S.ss.read||0)+1; save(); ssFx=Date.now()+8000; ssMusic();
-    openModal('소영에게', `<div class="letter">${esc(txt)}</div><button class="btn wide" id="ssClose" style="margin-top:10px">편지 접기</button>`);
+    openModal(ssT('letterTo','분홍 편지'), `<div class="letter">${esc(txt)}</div><button class="btn wide" id="ssClose" style="margin-top:10px">편지 접기</button>`);
     $('ssClose').onclick=closeModal; };
   $('ssGo').onclick=go; $('ssCode').onkeydown=e=>{ if(e.key==='Enter') go(); };
 }
@@ -3028,6 +3038,7 @@ document.addEventListener('visibilitychange',()=>{ if(document.hidden){ save(); 
 addEventListener('pagehide',save);
 
 // 시작
+ssApply();
 welcomeBack((Date.now()-S.last)/1000);
 fit(); updHud(); updClock(); updField();
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
@@ -3042,7 +3053,7 @@ if(REAL_FARM.shopUrl && S.shopNotice!==REAL_FARM.shopUrl) modalQueue.push(showSh
 nextModal();
 requestAnimationFrame(frame);
 if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
-window.__peach = {S:()=>S, pondTap, moonTap, scareTap, star:()=>star, setStar:v=>{star=v}, starTap, tteok:()=>tteok, checkFairy, fairy:()=>fairy, checkApril, napTap, ssTrigger, ssOpen, openLetter, dad:()=>dad, talkDad, ssGlow, gainXP, openHub, startMini, endMini:()=>endMini(false), mg:()=>mg, cp:()=>cp, startCatPlay, endCatPlay:()=>endCatPlay(false), spawnVisitor, visitors:()=>visitors, shareFarm, levelOf, farmLv, ensureDaily, bugs:()=>bugs, spawnBug, setWeather:w=>{weatherOverride=w}, setEvent:e=>{eventOverride=e}, startTyphoon, typhoonHit, ty:()=>typhoon, checkEvent, couponTick, goField, buyField, field:()=>curField, cat:()=>cat, birds:()=>birds, gifts:()=>gifts, setSeason:s=>{seasonOverride=s;curSeason=s;}, feedCat, newOrder, spawnCat:()=>{ if(!cat) spawnCat(); }, spawnBirds, ranch:()=>S.ranch, pests:()=>pests, spawnMouse, spawnSnake, openRanch, renderRanch, ranchAn:()=>ranchAn, ranchTick, tapPest, ripe:()=>{ S.trees.forEach(t=>{ if(t.u){t.stage=3;advance(t);} }); }};
+if(location.protocol==='file:') window.__peach = {S:()=>S, pondTap, moonTap, scareTap, star:()=>star, setStar:v=>{star=v}, starTap, tteok:()=>tteok, checkFairy, fairy:()=>fairy, checkApril, napTap, ssTrigger, ssOpen, openLetter, dad:()=>dad, talkDad, ssGlow, gainXP, openHub, startMini, endMini:()=>endMini(false), mg:()=>mg, cp:()=>cp, startCatPlay, endCatPlay:()=>endCatPlay(false), spawnVisitor, visitors:()=>visitors, shareFarm, levelOf, farmLv, ensureDaily, bugs:()=>bugs, spawnBug, setWeather:w=>{weatherOverride=w}, setEvent:e=>{eventOverride=e}, startTyphoon, typhoonHit, ty:()=>typhoon, checkEvent, couponTick, goField, buyField, field:()=>curField, cat:()=>cat, birds:()=>birds, gifts:()=>gifts, setSeason:s=>{seasonOverride=s;curSeason=s;}, feedCat, newOrder, spawnCat:()=>{ if(!cat) spawnCat(); }, spawnBirds, ranch:()=>S.ranch, pests:()=>pests, spawnMouse, spawnSnake, openRanch, renderRanch, ranchAn:()=>ranchAn, ranchTick, tapPest, ripe:()=>{ S.trees.forEach(t=>{ if(t.u){t.stage=3;advance(t);} }); }};
 </script>
 </body>
 </html>
