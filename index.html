@@ -28,7 +28,13 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
   border:2px solid var(--line);border-radius:2px;box-shadow:0 2px 0 var(--line);font-size:14px;min-width:0}
 .stat img{width:21px;height:21px;image-rendering:pixelated}
 #clock{margin-left:auto;font-size:11px;line-height:1.3;opacity:.8;white-space:nowrap;text-align:right}
-#hud{gap:6px}
+#hud{gap:5px}
+.stat{flex:none}
+#clock{flex:1;min-width:0}
+#fName{display:flex;gap:6px;align-items:center}
+#fClock{opacity:.7;padding-left:7px;border-left:1px solid #d9b8a8}
+@media (max-width:380px){ #hud{gap:4px} #hud .icon{width:26px;height:30px} #hud .icon img{width:15px;height:15px} .stat{padding:4px 5px 4px 4px !important;font-size:12px;gap:3px} .stat img{width:18px;height:18px} #clock{font-size:10px} }
+
 #hud .icon+.icon{margin-left:-2px}
 #stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
 #box{position:relative}
@@ -158,6 +164,8 @@ button.buff{font:inherit;font-size:11px;color:var(--ink);cursor:pointer;position
 .ss-in{font:inherit;font-size:22px;letter-spacing:8px;text-align:center;width:150px;border:2px solid var(--line);padding:6px;background:#fff;color:var(--ink);-webkit-user-select:text;user-select:text}
 .shake{animation:sh .35s}
 @keyframes sh{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+input.vol{width:100%;margin:8px 0 2px;accent-color:#ff8a80;-webkit-user-select:auto;user-select:auto}
+input.vol:disabled{opacity:.4}
 .fhead{margin:10px 0 2px;font-size:13px;color:#d26a5c}
 input.name{font:inherit;font-size:14px;border:2px solid var(--line);padding:6px 8px;width:130px;background:#fff;color:var(--ink);border-radius:2px}
 #bar button,.btn{font:inherit;color:var(--ink);background:var(--panel);border:2px solid var(--line);
@@ -196,6 +204,7 @@ input.name{font:inherit;font-size:14px;border:2px solid var(--line);padding:6px 
 .steps img{width:18px;height:18px;image-rendering:pixelated;vertical-align:-4px;margin:0 2px}
 .small{font-size:12px;opacity:.75}
 .danger{color:#c0392b}
+@media (max-width:350px){ #hud{gap:3px} #hud .icon{width:24px} #hud .stat{padding:3px 4px 3px 3px !important;gap:2px} #hud .stat img{width:15px;height:15px} }
 </style>
 </head>
 <body>
@@ -205,12 +214,12 @@ input.name{font:inherit;font-size:14px;border:2px solid var(--line);padding:6px 
     <div class="stat"><img id="icPeach" alt=""><span id="peaches">0</span></div>
     <div class="stat" id="goldStat" hidden><img id="icGold" alt=""><span id="golds">0</span></div>
     <div id="clock"></div>
-    <button class="icon" id="bMusic" aria-label="배경음악"><img id="icMusic" alt=""></button>
-    <button class="icon" id="bSound" aria-label="효과음"><img id="icSound" alt=""></button>
+    <button class="icon" id="bSound" aria-label="소리 설정"><img id="icSound" alt=""></button>
     <button class="icon" id="bHelp" aria-label="도움말"><img id="icHelp" alt=""></button>
+    <button class="icon" id="bShare" aria-label="내 농장 자랑하기"><img id="icShare" alt=""></button>
   </header>
   <div id="buffs"></div>
-  <main id="stage"><div id="box"><canvas id="game" width="160" height="256"></canvas><div id="fx"></div><button id="catBtn" hidden></button><button id="playBtn" hidden></button><button class="fnav" id="fPrev" aria-label="이전 밭"><img id="icPrev" alt=""></button><button class="fnav" id="fNext" aria-label="다음 밭"><img id="icNext" alt=""></button><div id="fLabel"></div><div id="fLock" hidden></div></div></main>
+  <main id="stage"><div id="box"><canvas id="game" width="160" height="256"></canvas><div id="fx"></div><button id="catBtn" hidden></button><button id="playBtn" hidden></button><button class="fnav" id="fPrev" aria-label="이전 밭"><img id="icPrev" alt=""></button><button class="fnav" id="fNext" aria-label="다음 밭"><img id="icNext" alt=""></button><div id="fLabel"><span id="fName"></span><span id="fClock"></span></div><div id="fLock" hidden></div></div></main>
   <nav id="bar">
     <button id="bShop"><img id="icShop" alt="">상점</button>
     <button id="bSell"><img id="icSell" alt="">팔기</button>
@@ -885,7 +894,7 @@ function sfx(kind){
     const now=actx.currentTime;
     const tone=(f,t0,d,type='square',vol=.05,f2)=>{ const o=actx.createOscillator(), g=actx.createGain();
       o.type=type; o.frequency.setValueAtTime(f,now+t0); if(f2) o.frequency.exponentialRampToValueAtTime(f2,now+t0+d);
-      g.gain.setValueAtTime(vol,now+t0); g.gain.exponentialRampToValueAtTime(.0001,now+t0+d);
+      g.gain.setValueAtTime(Math.max(.0002,vol*sfxVol()),now+t0); g.gain.exponentialRampToValueAtTime(.0001,now+t0+d);
       o.connect(g).connect(actx.destination); o.start(now+t0); o.stop(now+t0+d+.02); };
     if(kind==='water'){ tone(520,0,.08,'triangle',.08,900); tone(780,.07,.1,'triangle',.06,1200); }
     else if(kind==='cut'){ tone(1400,0,.04,'square',.03); tone(1100,.06,.04,'square',.03); }
@@ -957,7 +966,7 @@ function bgmStart(){
     if(!BGM.noise){ const len=actx.sampleRate*0.1, buf=actx.createBuffer(1,len,actx.sampleRate), d=buf.getChannelData(0);
       for(let k=0;k<len;k++) d[k]=Math.random()*2-1; BGM.noise=buf; }
     BGM.out=actx.createGain(); BGM.out.gain.setValueAtTime(0.0001,actx.currentTime);
-    BGM.out.gain.exponentialRampToValueAtTime(0.9,actx.currentTime+1.5); BGM.out.connect(actx.destination);
+    BGM.out.gain.exponentialRampToValueAtTime(Math.max(.0002,0.9*bgmVol()),actx.currentTime+1.5); BGM.out.connect(actx.destination);
     BGM.next=actx.currentTime+0.1; BGM.timer=setInterval(bgmTick,30);
   }catch(e){}
 }
@@ -968,6 +977,9 @@ function bgmStop(){
 }
 // 브라우저는 사용자가 한 번 터치해야 소리를 낼 수 있어요
 ['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,()=>{ if(!S.bgmOff) bgmStart(); },{passive:true}));
+const sfxVol = ()=> (S.sfxVol===undefined?1:S.sfxVol);
+const bgmVol = ()=> (S.bgmVol===undefined?1:S.bgmVol);
+function setBgmVol(v){ S.bgmVol=v; try{ if(BGM.out && actx){ BGM.out.gain.cancelScheduledValues(actx.currentTime); BGM.out.gain.setValueAtTime(Math.max(.0002,0.9*v),actx.currentTime); } }catch(e){} }
 const buzz=(ms=10)=>{ try{ navigator.vibrate && navigator.vibrate(ms) }catch(e){} };
 
 // ================= 날씨 =================
@@ -1513,7 +1525,7 @@ function ssMusic(){
   try{ audioCtx(); const now=actx.currentTime;
     const notes=[['C6',0],['E6',.18],['G6',.36],['C7',.54],['B6',.9],['G6',1.08],['A6',1.26],['E6',1.44],['F6',1.8],['E6',1.98],['D6',2.16],['C6',2.34]];
     for(const [n,t] of notes){ const o=actx.createOscillator(), g=actx.createGain(); o.type='sine'; o.frequency.value=noteHz(n);
-      g.gain.setValueAtTime(0.0001,now+t); g.gain.exponentialRampToValueAtTime(0.07,now+t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,now+t+0.7);
+      g.gain.setValueAtTime(0.0001,now+t); g.gain.exponentialRampToValueAtTime(Math.max(.0002,0.07*sfxVol()),now+t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,now+t+0.7);
       o.connect(g).connect(actx.destination); o.start(now+t); o.stop(now+t+0.75); }
   }catch(e){}
 }
@@ -2040,10 +2052,10 @@ function updHud(){
   $('goldStat').hidden = S.gold<=0 && S.stats.gold<=0;
   $('bInfo').classList.toggle('new', !!S.dexNew);
   $('bReal').classList.toggle('new', latestDiary()>S.diarySeen || (REAL_FARM.showCoupons && !!S.couponNew));
-  $('icSound').src = asURL(S.muted?icSpkOff:icSpk); $('icMusic').src = asURL(S.bgmOff?icNoteOff:icNote);
+  { const off=S.muted&&S.bgmOff, k=off?'off':'on'; const el=$('icSound'); if(el.dataset.k!==k){ el.dataset.k=k; el.src=asURL(off?icSpkOff:icSpk); } }
 }
 function updClock(){ const d=new Date(), ph={dawn:'새벽',day:'낮',dusk:'노을',night:'밤'}[skyPhase()];
-  $('clock').innerHTML = `${SEASON_NAME[curSeason]} ${ph}<br>${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+  $('fClock').textContent = `${SEASON_NAME[curSeason]} ${ph} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
 
 function openModal(title, html){ $('mTitle').textContent=title; $('mBody').innerHTML=html; $('modal').hidden=false; }
 let modalQueue=[];
@@ -2154,6 +2166,7 @@ function renderInfo(tab){
       찾은 비밀 <b>${Object.keys(eggs().found).filter(k=>EGG_KEYS.includes(k)).length}</b> / ${EGG_KEYS.length}</p>
       <p style="opacity:.8">${list}</p>
       ${SSHONG.showLetter&&S.ss&&S.ss.found?'<p><button class="btn" id="hLetter" style="display:inline-flex;flex-direction:row"><img src="'+asURL(icEnvelope,2)+'" alt="" style="width:18px">분홍 편지 다시 보기</button></p>':''}
+      <button class="btn wide pink" id="hShare" style="margin:0 0 10px">내 농장 자랑하기</button>
       <p><button class="btn" id="hHelp" style="display:inline-flex;flex-direction:row">도움말 보기</button>
       <button class="btn danger" id="hReset" style="display:inline-flex;flex-direction:row;margin-left:6px">처음부터</button></p></div>`;
   }
@@ -2170,6 +2183,7 @@ function renderInfo(tab){
   if($('catSave')) $('catSave').onclick=()=>{ const v=$('catName').value.trim().slice(0,8); S.cat.name=v; save(); if(ssName(v)){ ssTrigger('cat'); return; }
     const nv=v.replace(/\s/g,''); if(nv==='복숭아'||nv==='치즈'){ eggFound('catcolor'); burst(80,150,'heart',8); toast(nv==='복숭아'?'어? 고양이 얼룩이 분홍빛으로 물들었어요!':'어? 고양이가 노릇노릇 치즈색이 됐어요!',3200); renderInfo('cat'); return; } toast(v?`고양이 이름을 '${v}'(으)로 지었어요`:'이름을 지웠어요'); renderInfo('cat'); };
   if($('hHelp')) $('hHelp').onclick=showHelp;
+  if($('hShare')) $('hShare').onclick=shareFarm;
   if($('hLetter')) $('hLetter').onclick=openLetter;
   let armed=false;
   if($('hReset')) $('hReset').onclick=e=>{ if(!armed){ armed=true; e.target.textContent='정말요? 한 번 더'; return; }
@@ -2192,7 +2206,7 @@ function showHelp(){
     <p>앱을 꺼 둬도 나무는 계속 자라요. 물이 마르면 성장이 멈추니 가끔 들러 주세요.</p>
     <p>위쪽 <b>Lv</b> 버튼을 누르면 오늘의 할 일, 놀이, 농장 레벨을 볼 수 있어요. 농장 레벨이 오르면 새 밭, 놀이, 꾸미기, 마을 건물이 하나씩 열려요.</p>
     <p>가끔 황금 나비나 반짝이는 동전 같은 깜짝 손님이 나타나요. 놓치지 말고 톡!</p>
-    <p class="small">이 안내는 오른쪽 위 ? 버튼으로 언제든 다시 볼 수 있어요.</p>
+    <p class="small">이 안내는 오른쪽 위 ? 버튼으로 언제든 다시 볼 수 있어요. 소리는 스피커 버튼에서 조절해요.</p>
     <p style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn" id="hOk" style="flex-direction:row">${S.seenHelp?'닫기':'시작하기'}</button>
     ${(isStandalone||isApp)?'':'<button class="btn" id="hInstall" style="flex-direction:row">홈 화면에 앱으로 추가하기</button>'}</p></div>`);
   $('hOk').onclick=()=>{ S.seenHelp=true; save(); closeModal(); };
@@ -2465,7 +2479,7 @@ function updField(){
   if(key===fieldKey) return; fieldKey=key;
   $('fPrev').hidden = curField<=0; $('fNext').hidden = curField>=maxF;
   $('fPrev').classList.toggle('new',prevNeed); $('fNext').classList.toggle('new',nextNeed);
-  $('fLabel').innerHTML = `${FIELDS[curField].name}${locked?' (빈 땅)':''} ${FIELDS.map((_,f)=>f<=maxF?`<i class="${f===curField?'on':''}"></i>`:'').join('')}`;
+  $('fName').innerHTML = `${FIELDS[curField].name}${locked?' (빈 땅)':''} ${FIELDS.map((_,f)=>f<=maxF?`<i class="${f===curField?'on':''}"></i>`:'').join('')}`;
   const L=$('fLock');
   if(locked){
     L.hidden=false;
@@ -2485,7 +2499,20 @@ catBtn.onclick=feedCat;
 const playBtn=$('playBtn');
 playBtn.innerHTML=`<img src="${asURL(icFeather)}" alt="">놀아 주기`;
 playBtn.onclick=startCatPlay;
-$('bSound').onclick=()=>{ S.muted=!S.muted; updHud(); save(); if(!S.muted) sfx('pet'); toast(S.muted?'효과음을 껐어요':'효과음을 켰어요',1200); };
+function renderSound(){
+  const row=(id,icon,name,on,vol)=>`<div class="row"><img src="${asURL(icon)}" alt="" style="object-fit:contain"><div class="t"><b>${name}</b>
+      <input type="range" class="vol" id="${id}Vol" min="0" max="100" value="${Math.round(vol*100)}" ${on?'':'disabled'}></div>
+      <button class="btn" id="${id}Tog" style="flex-direction:row;min-width:58px;justify-content:center">${on?'켜짐':'꺼짐'}</button></div>`;
+  openModal('소리 설정', row('bgm',icNote,'배경음악',!S.bgmOff,bgmVol()) + row('sfx',icSpk,'효과음',!S.muted,sfxVol())
+    + `<p class="small" style="margin:10px 0 0">아이폰은 무음 모드가 켜져 있으면 소리가 나지 않을 수 있어요.</p>`);
+  $('bgmTog').onclick=()=>{ S.bgmOff=!S.bgmOff; if(S.bgmOff) bgmStop(); else bgmStart(); save(); updHud(); renderSound(); };
+  $('sfxTog').onclick=()=>{ S.muted=!S.muted; save(); updHud(); if(!S.muted) sfx('pet'); renderSound(); };
+  $('bgmVol').oninput=e=>{ setBgmVol(e.target.value/100); };
+  $('bgmVol').onchange=()=>save();
+  $('sfxVol').oninput=e=>{ S.sfxVol=e.target.value/100; };
+  $('sfxVol').onchange=()=>{ save(); sfx('pet'); };
+}
+$('bSound').onclick=renderSound;
 $('buffs').addEventListener('click', e=>{ if(e.target.closest('[data-hub]')) openHub(); });
 $('bShop').onclick=()=>renderShop();
 $('bSell').onclick=()=>sellAll();
@@ -2493,8 +2520,9 @@ $('bJumak').onclick=()=>renderJumak();
 $('bReal').onclick=()=>renderReal();
 $('bInfo').onclick=()=>renderInfo();
 $('bHelp').onclick=()=>showHelp();
+$('bShare').onclick=()=>shareFarm();
+$('icShare').src=asURL(spr(['...kk...','.kkkkkk.','kwwwwwwk','kwwkkwwk','kwkpykwk','kwwkkwwk','kwwwwwwk','.kkkkkk.'],{k:'#5a3428',w:'#ffd9c7',p:'#7cc4f5',y:'#e6f6ff'}));
 $('icHelp').src=asURL(spr(['.kkk.','k...k','....k','..kk.','..k..','.....','..k..'],{k:'#5a3428'}));
-$('bMusic').onclick=()=>{ S.bgmOff=!S.bgmOff; if(S.bgmOff) bgmStop(); else bgmStart(); updHud(); save(); toast(S.bgmOff?'배경음악을 껐어요':'배경음악을 켰어요',1200); };
 
 // ================= 메인 루프 =================
 let lastWall=Date.now(), saveT=0, clockT=0;
