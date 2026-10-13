@@ -136,6 +136,28 @@ s.old{opacity:.5;font-size:11px;margin-right:2px}
 .cp>img{width:30px;height:22px;image-rendering:pixelated;flex:none}
 .cp .t{flex:1;min-width:0}
 .cp .btn{flex-direction:row;padding:6px 9px;font-size:12px;white-space:nowrap}
+button.buff{font:inherit;font-size:11px;color:var(--ink);cursor:pointer;position:relative}
+.buff.hub{background:#ffe0d8;border-color:#d26a5c}
+.buff.hub b{font-weight:normal;color:#c0504a}
+.buff.hub.new::after{content:'';position:absolute;top:-5px;right:-5px;width:8px;height:8px;background:#ff5a5a;border:2px solid var(--line);border-radius:50%}
+#playBtn{position:absolute;right:12px;bottom:14px;font:inherit;font-size:13px;color:var(--ink);background:#e9f7dc;border:2px solid var(--line);
+  box-shadow:0 3px 0 var(--line);padding:6px 11px;display:flex;align-items:center;gap:5px;cursor:pointer;z-index:2;white-space:nowrap}
+#playBtn[hidden]{display:none}
+#playBtn img{width:12px;height:20px;image-rendering:pixelated}
+.mg{display:block;width:100%;image-rendering:pixelated;border:2px solid var(--line);touch-action:none;background:#bfe6ff}
+.mghud{display:flex;justify-content:space-between;font-size:14px;margin:0 0 6px}
+.ul{padding:6px 0;border-bottom:1px dashed #ecd0c2;display:flex;gap:8px;align-items:center;text-align:left}
+.ul:last-child{border-bottom:0}
+.ul.lock{opacity:.45}
+.ul .lvtag{flex:none;width:46px;color:#d26a5c;font-size:12px}
+.ul .ok{margin-left:auto;font-size:11px;color:#4c9a48;flex:none}
+.shareimg{width:100%;border:2px solid var(--line);display:block}
+.letter{background:#fffaf0;border:2px solid #e8b8c0;padding:16px 14px;white-space:pre-wrap;line-height:1.85;font-size:14px;
+  background-image:repeating-linear-gradient(transparent 0 25px,#f6dde2 25px 26px);animation:lt .6s ease-out}
+@keyframes lt{from{opacity:0;transform:translateY(8px)}to{opacity:1}}
+.ss-in{font:inherit;font-size:22px;letter-spacing:8px;text-align:center;width:150px;border:2px solid var(--line);padding:6px;background:#fff;color:var(--ink);-webkit-user-select:text;user-select:text}
+.shake{animation:sh .35s}
+@keyframes sh{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
 .fhead{margin:10px 0 2px;font-size:13px;color:#d26a5c}
 input.name{font:inherit;font-size:14px;border:2px solid var(--line);padding:6px 8px;width:130px;background:#fff;color:var(--ink);border-radius:2px}
 #bar button,.btn{font:inherit;color:var(--ink);background:var(--panel);border:2px solid var(--line);
@@ -188,7 +210,7 @@ input.name{font:inherit;font-size:14px;border:2px solid var(--line);padding:6px 
     <button class="icon" id="bHelp" aria-label="도움말"><img id="icHelp" alt=""></button>
   </header>
   <div id="buffs"></div>
-  <main id="stage"><div id="box"><canvas id="game" width="160" height="256"></canvas><div id="fx"></div><button id="catBtn" hidden></button><button class="fnav" id="fPrev" aria-label="이전 밭"><img id="icPrev" alt=""></button><button class="fnav" id="fNext" aria-label="다음 밭"><img id="icNext" alt=""></button><div id="fLabel"></div><div id="fLock" hidden></div></div></main>
+  <main id="stage"><div id="box"><canvas id="game" width="160" height="256"></canvas><div id="fx"></div><button id="catBtn" hidden></button><button id="playBtn" hidden></button><button class="fnav" id="fPrev" aria-label="이전 밭"><img id="icPrev" alt=""></button><button class="fnav" id="fNext" aria-label="다음 밭"><img id="icNext" alt=""></button><div id="fLabel"></div><div id="fLock" hidden></div></div></main>
   <nav id="bar">
     <button id="bShop"><img id="icShop" alt="">상점</button>
     <button id="bSell"><img id="icSell" alt="">팔기</button>
@@ -208,9 +230,9 @@ const SAVE_KEY = 'peach-farm-v1';
 const TREE_POS = [[48,104],[112,104],[48,164],[112,164],[48,224],[112,224]];
 // 밭 3개 x 6자리 = 최대 18그루. 밭을 개척하면 앞 두 자리는 바로 심어져요.
 const FIELDS = [
-  {name:'앞밭',      cost:0},
-  {name:'개울가 밭', cost:900},
-  {name:'언덕 밭',   cost:3000},
+  {name:'앞밭',      cost:0,    lv:1},
+  {name:'개울가 밭', cost:900,  lv:4},
+  {name:'언덕 밭',   cost:3000, lv:8},
 ];
 const SLOT_COST = [0,0,40,100,220,450,  0,0,500,650,800,1000,  0,0,1300,1600,2000,2500];
 const P = i => TREE_POS[i%6];
@@ -262,9 +284,11 @@ const VARIETIES = [
   {id:'snow',      name:'눈꽃복숭아', seasons:['winter'], w:4, price:14, pal:['#e8f4ff','#ffffff','#a8c8f0'], desc:'겨울에만 열리는 신비한 복숭아'},
   {id:'heart',     name:'하트복숭아', seasons:[], w:0, price:20, pal:['#ff8fb0','#ffe0ea','#e0507a'], desc:'쓰담쓰담을 많이 받은 나무에 가끔 열려요'},
   {id:'catpeach',  name:'냥복숭아',   seasons:[], w:0, price:25, pal:['#fffaf2','#ffffff','#ffd257'], desc:'고양이와 단짝이 되면 가끔 열려요'},
+  {id:'sshong',    name:'쑝복숭아',   seasons:[], w:0, price:30, secret:true, pal:['#ff9ab4','#fff0f4','#e0507a'], desc:'세상에서 제일 달콤한 복숭아. 이 농장이 시작된 이유'},
   {id:'gold',      name:'황금 복숭아', seasons:[], w:0, price:60, pal:['#ffd84a','#fff8c2','#e8a923'], desc:'아주 드물게 열리는 빛나는 복숭아'},
 ];
 const VAR = {}; VARIETIES.forEach(v=>VAR[v.id]=v);
+const DEX_VARS = VARIETIES.filter(v=>!v.secret);
 const SEASON_NAME = {spring:'봄', summer:'여름', autumn:'가을', winter:'겨울'};
 
 // ===== 꾸미기 (하나당 복숭아 판매가 +5%) =====
@@ -276,6 +300,8 @@ const DECOS = [
   {id:'jang',     name:'장독대',     price:90,  desc:'구수한 시골 농장 느낌'},
   {id:'pond',     name:'작은 연못',   price:150, desc:'물고기가 살아요. 누르면 퐁당!'},
   {id:'pavilion', name:'원두막',     price:200, desc:'울타리 너머 쉬어 가는 곳'},
+  {id:'sotdae',   name:'솟대',       price:60,  lv:3, desc:'나무 새가 농장을 지켜 줘요'},
+  {id:'stone',    name:'돌탑',       price:80,  lv:6, desc:'소원을 담아 하나씩 쌓은 돌탑'},
 ];
 
 // ===== 마을 의뢰 =====
@@ -304,7 +330,68 @@ const TREE_LV = [
   {min:15, name:'어른 나무',     bonus:2},
   {min:40, name:'할아버지 나무', bonus:3},
 ];
-const HONEY_HOURS = 2, HONEY_COINS = 25;   // 꿀벌통에서 꿀이 모이는 시간과 보상
+const HONEY_HOURS = 2, HONEY_COINS = 25;
+
+// ===== 농장 레벨 =====
+// 수확한 복숭아 1개 = 경험치 1. 의뢰, 오늘의 할 일, 놀이로도 경험치를 얻어요.
+const XP_NEED = L => Math.round(100*Math.pow(L,1.6));  // L레벨에서 다음 레벨까지 필요한 경험치 (숫자를 키우면 더 천천히 올라요)
+const TITLES = [[1,'새내기 농부'],[4,'부지런한 농부'],[8,'솜씨 좋은 농부'],[12,'복숭아 명인']];
+const UNLOCKS = [
+  {lv:2,  key:'mini',     text:'놀이: 복숭아 받기 (하루 3판)'},
+  {lv:2,  key:'v_house',  text:'마을에 초가집이 생겨요'},
+  {lv:3,  key:'catplay',  text:'고양이와 놀아 주기 (호감도 50 이상)'},
+  {lv:3,  key:'d_sotdae', text:'꾸미기: 솟대'},
+  {lv:4,  key:'field2',   text:'개울가 밭 개척'},
+  {lv:4,  key:'v_giwa',   text:'마을에 기와집이 생겨요'},
+  {lv:5,  key:'bee',      text:'상점에 꿀벌통 등장'},
+  {lv:6,  key:'peddler',  text:'깜짝 손님: 떠돌이 행상'},
+  {lv:6,  key:'d_stone',  text:'꾸미기: 돌탑'},
+  {lv:6,  key:'v_mill',   text:'마을에 물레방아가 돌아요'},
+  {lv:7,  key:'mini4',    text:'복숭아 받기 하루 4판'},
+  {lv:8,  key:'field3',   text:'언덕 밭 개척'},
+  {lv:8,  key:'v_market', text:'마을에 장터가 열려요'},
+  {lv:9,  key:'quest4',   text:'오늘의 할 일 4개'},
+  {lv:10, key:'goldmini', text:'복숭아 받기에 황금 복숭아 등장'},
+  {lv:10, key:'v_school', text:'마을에 학교가 생겨요'},
+  {lv:12, key:'v_tree',   text:'마을 어귀에 큰 느티나무'},
+  {lv:12, key:'title',    text:'칭호: 복숭아 명인'},
+];
+
+// ===== 오늘의 할 일 =====
+const QUESTS = [
+  {id:'harvest', text:'복숭아 {n}개 수확하기',       n:[15,30], stat:()=>S.stats.harvest},
+  {id:'water',   text:'물 {n}번 주기',               n:[4,8],   stat:()=>S.stats.water},
+  {id:'prune',   text:'가지치기 {n}번 하기',          n:[2,4],   stat:()=>S.stats.prune},
+  {id:'bugs',    text:'벌레 {n}마리 잡기',            n:[2,4],   stat:()=>S.stats.bugs||0},
+  {id:'bags',    text:'봉지 {n}장 씌우기',            n:[3,6],   stat:()=>S.stats.bags||0},
+  {id:'birds',   text:'새 {n}마리 쫓기',              n:[3,6],   stat:()=>S.stats.birds},
+  {id:'orders',  text:'마을 의뢰 {n}개 들어주기',      n:[1,1],   stat:()=>S.stats.orders||0},
+  {id:'jumak',   text:'이가네 주막에서 {n}번 먹기',    n:[1,1],   stat:()=>S.jumak.stamps},
+  {id:'sell',    text:'복숭아 {n}번 팔기',             n:[1,2],   stat:()=>S.stats.sells||0},
+  {id:'churu',   text:'고양이에게 츄르 {n}번 주기',    n:[1,1],   stat:()=>S.cat.fed||0},
+  {id:'mini',    text:'복숭아 받기 {n}판 하기',        n:[1,2],   stat:()=>S.stats.mini||0, lv:2},
+];
+const QUEST_COINS = 15, CHEST_COINS = 60;
+
+// ===== 비밀 이스터에그 (쑝) =====
+// 나무나 고양이 이름을 아래 이름 중 하나로 지으면 농장에 특별한 일이 생겨요.
+// 편지는 비밀번호로 잠겨 있어요. 편지와 비밀번호를 바꾸려면 letter-maker.html로 새로 만들어 lock, letter를 바꿔 넣어요.
+const SSHONG = {
+  names: ['소영','쑝','이소영','소영이','쑝이','쏘영'],
+  hint: '우리 둘만 아는 네 자리 숫자',
+  lock: '1m0jhhe',
+  letter: 'gU7kHSQPwzAH4O0OKRlraJnN0Yr+ArnutCz/NNwROtEQElwElAyAxPCzpFVnqk0WZjJqIASYOeijPbiV1kRvdhMRaAJLDTOpcxjGNJyGQ48mWImdm4KkO+DlS6RBiB0GMk2bpWHZIpF5hvZulv0BuKr6TL5YQqeyvcz+86rIWfUZCxJ8sVIUjgPPhg8ZeO0/VwBfb8Q37uuQEpNj+DG+fhx4ufA+1lisn3wdLvu+qCvvTKkLsO/a0p/iMJrRAb2ziOefXShaQ6mXpN7tWzh/Wx2qleQbHg2JmHA0FVF28lGtR2dIMZfB3kGYIWgJuhYCppQw25kZuYoOmEnTY7thVQgAo0Pto64mgyo20qYKBRgfUuG3duRUHbYG4E14DiEkCa7qMUfjV88D6zwDEi1fTWUj7PwsfXSSbAxBClmDtry7U2TeccL1m4sjNcPNpdsoNeOGH6eGjlmLu1ClTIUeMNRjHud99RNZaRgrR33KMFFrteMsEeU0AHaY0uSacppoZGUsGClCKj/rZXl+5EOKLBQIO86DCdfNmPhE2Gq18gGnUwlYZeogrpfw6jX2ktHeYKNqAT0y8teELwACao2Pg6kwXzXQgVZJ',
+  showLetter: false,  // 분홍 편지를 보여주려면 true로 바꿔요
+  dates: [],          // 기념일이나 생일(월-일). 예: ['03-14','08-29']. 이 날엔 농장이 저절로 분홍빛이 돼요
+};
+
+// ===== 떠돌이 행상 =====
+const PEDDLER = [
+  {id:'boost', name:'성장 촉진제', price:80,  desc:'지금 보고 있는 밭의 나무들이 한 단계씩 쑥 자라요'},
+  {id:'churu', name:'츄르 꾸러미', price:40,  desc:'고양이 호감도 +15'},
+  {id:'rare',  name:'희귀 접순',   price:150, desc:'다음에 익는 나무 하나가 아직 못 모은 품종으로 열려요'},
+  {id:'goldf', name:'황금 거름',   price:120, desc:'1시간 동안 황금 복숭아 확률 2배'},
+];   // 꿀벌통에서 꿀이 모이는 시간과 보상
 const CHURU = 10;                         // 고양이 츄르 가격
 const ATT_REWARD = [10,15,20,25,30,40,50]; // 출석 보상 (7일째는 황금 복숭아도)
 
@@ -319,7 +406,7 @@ const UPGRADES = {
   spr:   {name:'스프링클러', desc:'물이 천천히 말라요', cost:[60,160,380]},
   scare: {name:'허수아비',   desc:'새가 덜 찾아와요',   cost:[50,140,320]},
   fert:  {name:'유기농 비료', desc:'나무가 더 빨리 자라요', cost:[80,210,480]},
-  bee:   {name:'꿀벌통',     desc:'꽃 핀 나무에 벌이 날아와 복숭아가 하나 더 열려요. 꿀도 모여요', cost:[250]},
+  bee:   {name:'꿀벌통',     lv:5, desc:'꽃 핀 나무에 벌이 날아와 복숭아가 하나 더 열려요. 꿀도 모여요', cost:[250]},
 };
 const FRUIT_POS = [[-7,-21],[5,-23],[-1,-16],[9,-16],[-10,-14],[1,-28],[-5,-27]];
 const PERCH = [[-9,-30],[0,-35],[9,-30],[-13,-22],[13,-22]];
@@ -340,6 +427,7 @@ function newState(){
 let S;
 try{ S = JSON.parse(localStorage.getItem(SAVE_KEY)) }catch(e){}
 if(!S || !S.trees){ S = newState(); }
+function levelOf(xp){ let lv=1, rest=xp||0; while(rest>=XP_NEED(lv) && lv<99){ rest-=XP_NEED(lv); lv++; } return {lv, cur:rest, need:XP_NEED(lv)}; }
 function normalize(S){
   S.buff = S.buff || {grow:0,gold:0,bonus:0}; S.jumak = S.jumak || {stamps:0,eaten:{}};
   if(!S.inv){ S.inv = {baekdo: S.peaches||0}; }
@@ -354,6 +442,8 @@ function normalize(S){
   while(S.trees.length < FIELDS.length*6) S.trees.push(newTree(false));
   S.trees.forEach(t=>{ if(t.u && !t.born) t.born = S.last || Date.now(); t.harvests = t.harvests||0; });
   S.up.bee = S.up.bee||0; S.honeyAt = S.honeyAt||0; S.evtSeen = S.evtSeen||{}; S.coupon = S.coupon||{};
+  if(S.xp===undefined){ S.xp = (S.stats.harvest||0) + (S.stats.orders||0)*15 + (S.stats.bugs||0); S.lvSeen = levelOf(S.xp).lv; }
+  S.lvSeen = S.lvSeen || 1; S.mini = S.mini || {day:'', plays:0, best:0};
   S.fields = S.fields || 1; S.curField = Math.min(S.curField||0, S.fields);
   S.diarySeen = S.diarySeen || ''; S.shopNotice = S.shopNotice || '';
   return S;
@@ -387,6 +477,11 @@ const catSit = spr([...CAT_TOP,'..kkkkkkkkkkkk..'], CAT_PAL);
 const sleepTop = CAT_TOP.slice(); sleepTop[3] = 'kyk......kwkwwkk';
 const catSleep = spr([...sleepTop,'..kkkkkkkkkkkk..'], CAT_PAL);
 const CAT = {A:[catA,flip(catA)], B:[catB,flip(catB)], sit:[catSit,flip(catSit)], sleep:[catSleep,flip(catSleep)]};
+function mkCat(pal){ const a=spr([...CAT_TOP,'..kwk..kwk.kwk..','..kk...kk..kk...'],pal), b=spr([...CAT_TOP,'...kwk.kwk..kwk.','...kk..kk...kk..'],pal),
+  si=spr([...CAT_TOP,'..kkkkkkkkkkkk..'],pal), sl=spr([...sleepTop,'..kkkkkkkkkkkk..'],pal);
+  return {A:[a,flip(a)], B:[b,flip(b)], sit:[si,flip(si)], sleep:[sl,flip(sl)]}; }
+const CAT_PEACH = mkCat({...CAT_PAL, y:'#ff9ab4'}), CAT_CHEESE = mkCat({...CAT_PAL, w:'#ffe3a0', y:'#f0a030'});
+function catSet(){ const n=String((typeof S!=='undefined'&&S.cat&&S.cat.name)||'').replace(/\s/g,''); return n==='복숭아'?CAT_PEACH : n==='치즈'?CAT_CHEESE : CAT; }
 
 const BIRD_PAL = {k:'#3d3550', b:'#78aee0', l:'#b9dcf7', w:'#fff5e6', o:'#ffa640', e:'#1d1d1d'};
 const birdUp = spr(['.kk.kkk..','klbkbbek.','.kkbbbbbo','.kbbbbbk.','..kwwwk..','...k.k...'], BIRD_PAL);
@@ -416,6 +511,7 @@ const scarecrow = spr([
   'sssssssssss','h..sssss..h','...ssbss...','...rrrrr...','...rr.rr...',
   '.....t.....','.....t.....','.....t.....','....ttt....'],
   {h:'#f2c94c',H:'#c9952b',f:'#ffe7c7',e:'#333',m:'#d77',s:'#e57373',b:'#ffeb99',r:'#6d8fd1',t:'#8b5a3c'});
+const scarecrowF = flip(scarecrow);
 const zzz = spr(['####','..#.','.#..','####'], {'#':'#6a7bd6'});
 const DIG = {
   '0':['###','#.#','#.#','#.#','###'],'1':['.#.','##.','.#.','.#.','###'],'2':['###','..#','###','#..','###'],
@@ -491,8 +587,8 @@ const CATP_ROWS = ['.o...o.','.oo.oo.','.pphpo.','phepeoo','ppppooo','ppnpooo','
 const VAR_IMG = {};
 for(const v of VARIETIES){
   const pal = {p:v.pal[0],h:v.pal[1],o:v.pal[2],g:'#5aa85a',d:'#3f7d42',e:'#3b2a2a',n:'#ff8fa3',k:'#7a3a2a'};
-  const rows = v.id==='flat'?FLAT_ROWS : v.id==='catpeach'?CATP_ROWS : PEACH_ROWS;
-  const fr = v.id==='flat'?['.kkkk.','kphpok','kppook','.kkkk.'] : v.id==='catpeach'?['o...o','kpppk','kphek','kppok','.kkk.'] : ['.kkk.','kphpk','kppok','kpook','.kkk.'];
+  const rows = v.id==='flat'?FLAT_ROWS : v.id==='catpeach'?CATP_ROWS : v.id==='sshong'?['...gd..','.pp.pp.','phpppoo','pppppoo','.ppppo.','..ppo..','...o...'] : PEACH_ROWS;
+  const fr = v.id==='sshong'?['.k.k.','kpkpk','kphpk','.kpk.','..k..'] : v.id==='flat'?['.kkkk.','kphpok','kppook','.kkkk.'] : v.id==='catpeach'?['o...o','kpppk','kphek','kppok','.kkk.'] : ['.kkk.','kphpk','kppok','kpook','.kkk.'];
   VAR_IMG[v.id] = {icon:spr(rows,pal), fruit:spr(fr,pal)};
 }
 const icGift = spr(['..r.r..','...r...','kkkkkkk','kpprppk','kpprppk','kpprppk','kkkkkkk'], {r:'#e0503c',p:'#ffd2e1',k:'#7a4a3a'});
@@ -520,10 +616,47 @@ const snowman = spr([
 FOOD.samgye = spr([
   '....wwwww.....','..wwWwwwwww...','kbbwwwwwwwwbbk','kbbbwwwwwwbbbk','.kbbbbbbbbbbk.','..kbbbbbbbbk..','...kkkkkkkk...'],
   {k:'#2a1a12',b:'#5a3a28',w:'#fff1d6',W:'#ffffff'});
+const icBasket = spr(['....kkkk....','...k....k...','kkkkkkkkkkkk','kbBbBbBbBbbk','kbbBbBbBbBbk','.kbBbBbBbbk.','..kkkkkkkk..'],
+  {k:'#7a4a3a',b:'#c98a4a',B:'#e8b070'});
+const icFeather = spr(['..y..','.yYy.','.yYy.','.yYy.','..y..','..g..','..g..','..g..','..g..'], {y:'#e8d27a',Y:'#fff1b0',g:'#6cc35a'});
+const bflyA = spr(['yy.yy','yYkYy','.yky.','..k..'], {y:'#ffd84a',Y:'#fff3a0',k:'#5a3428'});
+const bflyB = spr(['.y.y.','.YkY.','..k..','..k..'], {y:'#ffd84a',Y:'#fff3a0',k:'#5a3428'});
+const peddler = spr(['..hhhhhh..','hhhhhhhhhh','...ffff...','...fefe...','...ffff...','.bbrrrrbb.','.bbrrrrbb.','.bbrrrrbb.','..rrrrrr..','...pppp...','...p..p...','...s..s...'],
+  {h:'#d9b04a',f:'#ffe0c0',e:'#3b2a20',b:'#a8714c',r:'#5a7ab0',p:'#f6ead2',s:'#5a3428'});
+function villageSprite(rows, pal){ return [spr(rows,pal), spr(rows,{...pal, n:'#ffd86a'})]; }
+const VILLAGE = [
+  {key:'v_house', x:40, y:31, img:villageSprite(['....yyyyyy....','..yyYYYYYYyy..','.yyYYYYYYYYyy.','yyyyyyyyyyyyyy','.wwwwwwwwwwww.','.wwnnwwwwddww.','.wwnnwwwwddww.','.wwwwwwwwddww.','.ssssssssssss.'],
+     {y:'#c9a14a',Y:'#e8c46a',w:'#f6ead2',n:'#5a3a28',d:'#8b5a3c',s:'#9a8a7a'})},
+  {key:'v_giwa',  x:98, y:30, img:villageSprite(['...kkkkkkkkkk...','.kkGGGGGGGGGGkk.','kGGGGGGGGGGGGGGk','k..kkkkkkkkkk..k','...wpwwwwwwpw...','...wpwnnwwwpw...','...wpwnnwwdpw...','...wpwwwwwdpw...','...ssssssssss...'],
+     {k:'#3a4250',G:'#5a6a80',w:'#f6ead2',p:'#8b5a3c',n:'#5a3a28',d:'#8b5a3c',s:'#a09080'})},
+  {key:'v_mill',  x:62, y:30, img:villageSprite(['....kkkk....','..kk.kk.kk..','.k...kk...k.','.k.kkkkkk.k.','kkkk.kk.kkkk','.k.kkkkkk.k.','.k...kk...k.','..kk.kk.kk..','....kkkk....','bbbbbbbbbbbb'],
+     {k:'#8b5a3c',b:'#7cc4f5'})},
+  {key:'v_market',x:116,y:32, img:villageSprite(['rwrwrwrwrwrwrwrw','rwrwrwrwrwrwrwrw','.rwrwrwrwrwrwrw.','.p............p.','.p.oo.yy..gg..p.','.p.oo.yy..gg..p.','.pccccccccccccp.'],
+     {r:'#e0503c',w:'#fff6ee',p:'#8b5a3c',o:'#ffb2a1',y:'#ffd84a',g:'#8fd26a',c:'#a8714c'})},
+  {key:'v_school',x:139,y:25, img:villageSprite(['......yy......','.....kkkk.....','.....kyyk.....','....kkkkkk....','.....wwww.....','.....wnnw.....','..kkkkkkkkkk..','.kRRRRRRRRRRk.','kkkkkkkkkkkkkk','.wwwwwwwwwwww.','.wnnwnnwwnnww.','.wnnwnnwwnnww.','.wwwwwwddwwww.','.wwwwwwddwwww.'],
+     {y:'#ffd84a',k:'#5a3428',w:'#f6ead2',n:'#5a3a28',R:'#c0504a',d:'#8b5a3c'})},
+];
+const icEnvelope = spr(['kkkkkkkkk','kwkwwwkwk','kwwkwkwwk','kwwwkwwwk','kwwwrwwwk','kwwrrrwwk','kkkkkkkkk'], {k:'#d0607a',w:'#fff0f4',r:'#ff5a7a'});
+const dadNpc = spr(['..hhhhhh..','hhhhhhhhhh','...ffff...','...fefe...','..wffffw..','..wwmmww..','.bbbbbbbb.','.fbbbbbbf.','..bbbbbb..','..pppppp..','..pp..pp..','..ss..ss..'],
+  {h:'#e8cf7a',f:'#f0c8a0',e:'#3b2a20',w:'#ffffff',m:'#b07050',b:'#6a9ad0',p:'#5a6a50',s:'#4a3a2a'});
+const icHeartBig = spr(['.rr.rr.','rrrrrrr','rRrrrrr','.rrrrr.','..rrr..','...r...'], {r:'#ff6a8a',R:'#ffd0dc'});
+const sansin = spr(['....wwww....','...wwwwww...','...wffffw...','...fefeff..t','...wffffw..t','..wwwwwwww.t','..wwwwwwww.t','...wwwwww..t',
+  '..bbbbbbbb.t','.bbbbbbbbbbt','.bbbbbbbbbbt','..bbbbbbbb.t','..bbbbbbbb.t','...cccccc..t','.cccccccccc.','cccccccccccc'],
+  {w:'#ffffff',f:'#ffe0c0',e:'#3b2a20',t:'#8b5a3c',b:'#c8e0f0',c:'#e6f6ff'});
+const icSilver = spr(PEACH_ROWS, {p:'#d8dde4',h:'#ffffff',o:'#a8b0bc',g:'#5aa85a',d:'#3f7d42'});
+const APPLE_ROWS = ['...g...','..gd...','.rrrrr.','rRrrrrr','rrrrrrr','rrrrrrr','.rrrrr.','..r.r..'];
+const icApple = spr(APPLE_ROWS, {r:'#e0403a',R:'#ff9a8a',g:'#8b5a3c',d:'#5aa85a'});
+const fruitApple = spr(['.kkk.','krRrk','krrrk','krrrk','.k.k.'], {k:'#7a1a1a',r:'#e0403a',R:'#ff9a8a'});
+const icTteok = spr(['.wwww.','wwWwww','wwwwww','.wwww.'], {w:'#fff6ee',W:'#ffffff'});
+const fairySpr = [spr(['w...w','ww.ww','.pyp.','..p..','.p.p.'], {w:'#e6f6ff',p:'#ff9ab4',y:'#ffe08a'}),
+                  spr(['.....','.w.w.','wpypw','..p..','.p.p.'], {w:'#e6f6ff',p:'#ff9ab4',y:'#ffe08a'})];
 const icChuru = spr(['..kk','.kpk','kppk','kpk.','kk..'], {k:'#7a4a3a',p:'#ffb8c8'});
 
 // 꾸미기 그리기 (g: 그릴 캔버스, x,y: 왼쪽 위)
 const RR=(g,x,y,w,h,c)=>{ g.fillStyle=c; g.fillRect(x,y,w,h); };
+function drawBigTree(g,x,y){ RR(g,x-1,y-2,3,14,'#6b4430');
+  for(const [cx,cy,r,c] of [[0,-6,8,'#3f7a3a'],[-5,-3,6,'#3f7a3a'],[5,-3,6,'#3f7a3a'],[0,-7,6,'#5aa84a'],[-3,-9,3,'#8fd26a']])
+    for(let yy=-r;yy<=r;yy++) for(let xx=-r;xx<=r;xx++) if(xx*xx+yy*yy<=r*r) RR(g,x+cx+xx,y+cy+yy,1,1,c); }
 function jar(g,x,y,w,h){ RR(g,x+1,y,w-2,1,'#2a170e'); RR(g,x,y+1,w,h-2,'#3a2014'); RR(g,x+1,y+1,w-2,h-3,'#6b3a22');
   RR(g,x+1,y+2,1,Math.max(1,h-5),'#9a5a36'); RR(g,x+1,y+h-1,w-2,1,'#3a2014'); }
 const DECO_DRAW = {
@@ -543,11 +676,14 @@ const DECO_DRAW = {
     ws.forEach((w,k)=>{ RR(g,x+10-w/2,y+k,w,1,'#4f7f90'); if(k>0&&k<5) RR(g,x+11-w/2,y+k,w-2,1,'#7cc4f5'); });
     RR(g,x+5,y+2,3,1,'#c8ecff'); RR(g,x+12,y+2,3,2,'#5aa84a'); RR(g,x+13,y+2,1,1,'#ff9ab8');
     RR(g,x+7+Math.round(Math.sin((t||0)*0.8)*3),y+3,2,1,'#ff9a4a'); },
+  sotdae(g,x,y){ RR(g,x+3,y+5,2,26,'#8b5a3c'); RR(g,x+3,y+5,1,26,'#a8714c');
+    RR(g,x,y+3,8,2,'#d9b48a'); RR(g,x+5,y+1,3,2,'#d9b48a'); RR(g,x+8,y+2,1,1,'#e0503c'); RR(g,x,y+2,1,1,'#d9b48a'); RR(g,x+6,y+1,1,1,'#3b2a20'); },
+  stone(g,x,y){ let yy=y; for(const [ox,w] of [[4,4],[3,6],[2,8],[1,10],[0,12],[1,10]]){ RR(g,x+ox,yy,w,3,'#8e8e8e'); RR(g,x+ox,yy,w,1,'#c4c4c4'); RR(g,x+ox,yy+2,w,1,'#6e6e6e'); yy+=3; } },
   pavilion(g,x,y){ for(let k=0;k<8;k++){ RR(g,x+15-2*k-1,y+k,4*k+2,1,k===7?'#a07a2a':'#d9b04a'); RR(g,x+15-2*k-1,y+k,1,1,'#8a6420'); }
     RR(g,x+3,y+8,2,15,'#6b4430'); RR(g,x+25,y+8,2,15,'#6b4430'); RR(g,x+1,y+15,28,3,'#8b5a3c'); RR(g,x+1,y+15,28,1,'#a8714c');
     RR(g,x+11,y+18,8,1,'#6b4430'); RR(g,x+11,y+20,8,1,'#6b4430'); },
 };
-function decoIcon(id){ const [w,h]={pinwheel:[9,14],mailbox:[8,14],flowers:[17,5],lantern:[5,8],jang:[18,11],pond:[20,6],pavilion:[30,23]}[id];
+function decoIcon(id){ const [w,h]={pinwheel:[9,14],mailbox:[8,14],flowers:[17,5],lantern:[5,8],jang:[18,11],pond:[20,6],pavilion:[30,23],sotdae:[9,31],stone:[12,18]}[id];
   const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d');
   if(id==='flowers') DECO_DRAW.flowers(g,0,0,17); else DECO_DRAW[id](g,0,0,0); return c; }
 function drawBoard(g,x,y){ RR(g,x+2,y+10,2,8,'#5a3428'); RR(g,x+12,y+10,2,8,'#5a3428'); RR(g,x,y,16,12,'#5a3428'); RR(g,x+1,y+1,14,10,'#c9935a');
@@ -668,6 +804,7 @@ function drawBG(t){
   if(ph==='night'){
     for(const [x,y] of stars){ if((Math.sin(t*2+x)+1)>0.6){ ctx.fillStyle='#fff7c9'; ctx.fillRect(x,y,1,1);} }
     if(evtIs('chuseok')){ ctx.fillStyle='rgba(255,230,150,.25)'; ctx.fillRect(117,2,22,22); ctx.drawImage(icMoonEvt,124,9); ctx.fillStyle='#ffe08a'; ctx.fillRect(122,11,11,3); ctx.fillRect(126,7,3,11); }
+    else if(Date.now()<rabbitUntil) drawMoonRabbit(t);
     else { ctx.fillStyle='#fff3b0'; ctx.fillRect(126,8,8,8); ctx.fillRect(125,9,10,6); ctx.fillStyle=sk[0]; ctx.fillRect(129,7,7,7); }
   } else {
     const sx = ph==='day'?128:(ph==='dawn'?22:134), sy= ph==='day'?10:26;
@@ -679,6 +816,8 @@ function drawBG(t){
       ctx.fillRect(x,y,s*3,s); ctx.fillRect(x+s/2,y-s/2,s*2,s); ctx.fillStyle='#e6f2ff'; ctx.fillRect(x,y+s-1,s*3,1);
     }
   }
+  if(ssGlow() && ph!=='night'){ const hx=52, hy=8; ctx.fillStyle='#ffe6ee';
+    for(const [ox,oy,w,h] of [[0,2,7,4],[8,2,7,4],[1,1,5,1],[9,1,5,1],[1,6,13,2],[3,8,9,2],[5,10,5,1],[6,11,3,1]]) ctx.fillRect(hx+ox,hy+oy,w,h); }
   const wnB=weatherNow();
   if(wnB==='rainbow' && ph!=='night'){
     const C=['#ff6b6b','#ffb04a','#ffe066','#8fd26a','#7cc4f5','#b49aff'];
@@ -692,7 +831,11 @@ function drawBG(t){
   for(let x=0;x<W;x++){ const h=Math.floor(6+4*Math.sin(x/14)+2*Math.sin(x/5)); ctx.fillRect(x,40-h,1,h+2); }
   ctx.fillStyle = ph==='night'?'#355a4c':'#9fd987';
   for(let x=0;x<W;x++){ const h=Math.floor(3+3*Math.sin(x/9+2)); ctx.fillRect(x,42-h,1,h+2); }
+  { const night = ph==='night'||ph==='dusk';
+    if(unlocked('v_tree')) drawBigTree(ctx,86,30);
+    for(const v of VILLAGE) if(unlocked(v.key)) ctx.drawImage(v.img[night?1:0], v.x, v.y); }
   if(S.deco.pavilion) DECO_DRAW.pavilion(ctx,6,18);
+  if(napTime()){ const cs=catSet(); ctx.drawImage(cs.sleep[0], 12, 24); const zp=(t%2)/2; ctx.globalAlpha=1-zp; ctx.drawImage(zzz, 26, 18-Math.round(zp*5)); ctx.globalAlpha=1; }
   ctx.drawImage(grassLayer,0,0);
   if(curSeason==='autumn'){ ctx.fillStyle='rgba(214,150,60,.20)'; ctx.fillRect(0,26,W,H-26); }
   if(curSeason==='winter'){ ctx.fillStyle='rgba(255,255,255,.55)'; ctx.fillRect(0,50,W,H-50); ctx.fillStyle='rgba(255,255,255,.6)'; ctx.fillRect(0,26,W,22); }
@@ -859,6 +1002,30 @@ function treeLevel(t){ let k=0; TREE_LV.forEach((l,i)=>{ if((t.harvests||0)>=l.m
 function treeName(i){ const t=S.trees[i]; return t.name || `${FIELDS[fieldOf(i)].name} ${i%6+1}번 나무`; }
 const esc = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+// ================= 농장 레벨 =================
+const farmLv = ()=> levelOf(S.xp).lv;
+const unlocked = key => { const u=UNLOCKS.find(x=>x.key===key); return !u || farmLv()>=u.lv; };
+function titleOf(lv){ let t=TITLES[0][1]; TITLES.forEach(([l,n])=>{ if(lv>=l) t=n; }); return t; }
+function gainXP(n){
+  if(!n) return; S.xp=(S.xp||0)+n;
+  const L=farmLv();
+  if(L>S.lvSeen){ const from=S.lvSeen; S.lvSeen=L; save(); sfx('buy'); buzz(30);
+    const idle=modalIdle(); modalQueue.push(()=>showLevelUp(from,L)); if(idle) nextModal(); }
+}
+
+// ================= 오늘의 할 일 =================
+const questsN = ()=> unlocked('quest4') ? 4 : 3;
+function ensureDaily(){
+  const d=todayKey(); if(S.daily && S.daily.day===d) return;
+  const pool=QUESTS.filter(q=>!q.lv || farmLv()>=q.lv).sort(()=>Math.random()-0.5);
+  S.daily={day:d, chest:false, quests:pool.slice(0,questsN()).map(q=>({id:q.id, n:irand(q.n[0],q.n[1]), base:q.stat(), done:false}))};
+  save();
+}
+const qDef = id => QUESTS.find(q=>q.id===id);
+const qProg = q => Math.max(0, Math.min(q.n, qDef(q.id).stat()-q.base));
+const qReady = q => !q.done && qProg(q)>=q.n;
+const hubAttention = ()=> !!S.daily && (S.daily.quests.some(qReady) || (!S.daily.chest && S.daily.quests.every(q=>q.done)));
+
 // ================= 성장 로직 =================
 let simNow = Date.now();
 function growTrees(dt, catIdx){
@@ -900,6 +1067,8 @@ function simulate(sec){
 }
 
 function pickVariety(t){
+  if(t.heart && Math.random()<0.3) return 'sshong';
+  if(S.rarePending>0){ const pool=VARIETIES.filter(v=>v.w>0 && !S.dex[v.id]); if(pool.length){ S.rarePending--; return pool[irand(0,pool.length-1)].id; } }
   if(S.cat.aff>=80 && Math.random()<0.08) return 'catpeach';
   if((t.pets||0)>=3 && Math.random()<0.25) return 'heart';
   const pool = VARIETIES.filter(v=>v.seasons.includes(curSeason));
@@ -1006,7 +1175,7 @@ function updateBees(dt){
 const honeyReady = ()=> S.up.bee && Date.now()>=S.honeyAt;
 function collectHoney(){
   if(!honeyReady()) { floatText(HIVE[0]+6,HIVE[1]-4,'윙윙','gold'); return; }
-  S.coins+=HONEY_COINS; S.honeyAt=Date.now()+HONEY_HOURS*3600000; S.stats.honey=(S.stats.honey||0)+1;
+  S.coins+=HONEY_COINS; S.honeyAt=Date.now()+HONEY_HOURS*3600000; S.stats.honey=(S.stats.honey||0)+1; gainXP(5);
   floatText(HIVE[0]+4,HIVE[1]-6,`꿀 +${HONEY_COINS}`,'gold'); burst(HIVE[0]+6,HIVE[1]+4,'spark',8); sfx('coin'); save(); updHud();
 }
 
@@ -1022,7 +1191,7 @@ function typhoonHit(){
   S.trees.forEach(t=>t.staked=false);
   typhoon={phase:'storm', end:Date.now()+25000}; birds.forEach(b=>flee(b,false));
   S.stats.typhoon=(S.stats.typhoon||0)+1;
-  if(!hurt && safe){ S.coins+=30; toast('지지대 덕분에 모든 나무가 무사해요! (+30코인)',3800); sfx('buy'); }
+  if(!hurt && safe){ S.coins+=30; gainXP(20); toast('지지대 덕분에 모든 나무가 무사해요! (+30코인)',3800); sfx('buy'); }
   else if(hurt) toast(`태풍에 나무 ${hurt}그루가 흔들려서 열매가 조금 떨어졌어요`,3800);
   save(); updHud();
 }
@@ -1035,9 +1204,456 @@ function weatherTick(){
   else if(typhoon.phase==='storm' && now>=typhoon.end){ typhoon=null; toast('태풍이 지나갔어요. 하늘이 다시 맑아졌어요'); }
 }
 
+// ================= 깜짝 손님 =================
+let visitors=[], visitTimer=rand(60,120);
+function spawnVisitor(kind){
+  if(visitors.length) return;
+  const r=Math.random(); kind = kind || ((unlocked('peddler') && r<0.2) ? 'peddler' : r<0.6 ? 'butterfly' : 'coin');
+  if(kind==='peddler'){ const offers=PEDDLER.slice().sort(()=>Math.random()-0.5).slice(0,3).map(o=>o.id);
+    visitors.push({type:'peddler', x:-10, y:252, tx:15, life:55, a:0, field:curField, offers, bought:{}});
+    toast('떠돌이 행상이 왔어요! 왼쪽 아래 행상을 톡 눌러 구경해 보세요',3200); }
+  else if(kind==='butterfly'){ visitors.push({type:'butterfly', x:-6, y:rand(80,200), y0:0, life:13, a:0, field:curField});
+    if((S.stats.bfly||0)<2) toast('황금 나비가 날아가요! 놓치기 전에 톡!'); }
+  else { const [x,y]=grassPoint(); visitors.push({type:'coin', x, y, life:12, a:0, field:curField}); }
+}
+function updateVisitors(dt){
+  visitTimer-=dt; if(visitTimer<=0){ spawnVisitor(); visitTimer=rand(90,180); }
+  for(const v of visitors){ v.a+=dt; v.life-=dt;
+    if(v.type==='butterfly'){ v.x+=13*dt; v.y+=Math.sin(v.a*2.6)*0.5; }
+    if(v.type==='peddler'){ if(v.life>4) v.x+=clamp(v.tx-v.x,-22*dt,22*dt); else v.x-=24*dt; } }
+  visitors=visitors.filter(v=>v.life>0 && v.x<W+12 && v.x>-14);
+}
+function tapVisitor(x,y){
+  for(const v of visitors){ if(v.field!==curField) continue;
+    if(v.type==='butterfly' && Math.hypot(v.x-x,v.y-y)<11){ visitors=visitors.filter(o=>o!==v); S.coins+=15; S.stats.bfly=(S.stats.bfly||0)+1; gainXP(5);
+      floatText(v.x,v.y-6,'황금 나비 +15','gold'); burst(v.x,v.y,'spark',10); sfx('coin'); buzz(15); return true; }
+    if(v.type==='coin' && Math.hypot(v.x-x,v.y-3-y)<10){ visitors=visitors.filter(o=>o!==v); const c=irand(5,20); S.coins+=c; gainXP(2);
+      floatText(v.x,v.y-8,'옛날 동전 +'+c,'gold'); burst(v.x,v.y,'spark',8); sfx('coin'); return true; }
+    if(v.type==='peddler' && x>v.x-9 && x<v.x+9 && y>v.y-20 && y<v.y+2){ openPeddler(v); return true; }
+  }
+  return false;
+}
+function openPeddler(v){
+  const coin=`<img src="${asURL(icCoin)}" alt="">`;
+  let h=`<div class="jumak-head"><img src="${asURL(peddler,4)}" alt="" style="width:30px;height:36px"><div>멀리서 귀한 물건을 가져왔소!<br><small style="opacity:.75">조금 있으면 다른 마을로 떠나요</small></div></div>`;
+  for(const id of v.offers){ const o=PEDDLER.find(p=>p.id===id); const got=v.bought[id];
+    h+=`<div class="row"><img src="${asURL(id==='churu'?icChuru:id==='goldf'?icGold:id==='rare'?icSprout:icDrop)}" alt=""><div class="t"><b>${o.name}</b><small>${o.desc}</small></div>
+      ${got?'<span class="lv">샀어요</span>':`<button class="btn" data-pd="${id}" ${S.coins>=o.price?'':'disabled'}>${coin}${o.price}</button>`}</div>`; }
+  openModal('떠돌이 행상', h);
+  $('mBody').querySelectorAll('button[data-pd]').forEach(b=>b.onclick=()=>{
+    const o=PEDDLER.find(p=>p.id===b.dataset.pd); if(!o || v.bought[o.id] || S.coins<o.price) return;
+    S.coins-=o.price; v.bought[o.id]=true; sfx('buy');
+    if(o.id==='boost'){ fieldTrees(curField).forEach(i=>{ const t=S.trees[i]; if(t.u && t.stage<4){ advance(t); burst(P(i)[0],P(i)[1]-16,'spark',6); } }); toast('나무들이 쑥쑥 자랐어요!'); }
+    if(o.id==='churu'){ S.cat.aff=Math.min(100,S.cat.aff+15); toast('고양이 호감도가 15 올랐어요'); }
+    if(o.id==='rare'){ S.rarePending=(S.rarePending||0)+1; toast('다음에 익는 나무에서 새 품종이 열려요!'); }
+    if(o.id==='goldf'){ S.buff.gold=Math.max(Date.now(),S.buff.gold)+60*60000; renderBuffs(); toast('1시간 동안 황금 복숭아가 잘 열려요'); }
+    save(); updHud(); openPeddler(v);
+  });
+}
+
+// ================= 놀이: 복숭아 받기 =================
+const miniMax = ()=> unlocked('mini4') ? 4 : 3;
+function miniLeft(){ if(S.mini.day!==todayKey()){ S.mini.day=todayKey(); S.mini.plays=0; } return Math.max(0, miniMax()-S.mini.plays); }
+let mg=null;
+function startMini(){
+  if(!unlocked('mini') || miniLeft()<=0){ toast('오늘은 다 놀았어요. 내일 또 해요!'); return; }
+  S.mini.plays++; save();
+  openModal('복숭아 받기', `<div class="mghud"><span id="mgScore">0점</span><span id="mgTime">30초</span></div>
+    <canvas class="mg" id="mgCv" width="160" height="200"></canvas>
+    <p class="small" style="margin:6px 0 0">손가락으로 바구니를 움직여 복숭아를 받아요.${unlocked('goldmini')?' 황금 복숭아는 5점!':''} 벌레는 피하세요!</p>`);
+  const c=$('mgCv'), g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+  mg={c,g,t:30,score:0,bx:80,items:[],spawn:0.4,last:performance.now(),hit:0,miss:0};
+  const mv=e=>{ if(!mg) return; const r=c.getBoundingClientRect(); mg.bx=clamp((e.clientX-r.left)/r.width*160,12,148); };
+  c.addEventListener('pointerdown',e=>{ e.preventDefault(); mv(e); }); c.addEventListener('pointermove',e=>{ e.preventDefault(); mv(e); });
+  requestAnimationFrame(mgLoop);
+}
+function mgLoop(now){
+  if(!mg) return;
+  if($('modal').hidden || !document.body.contains(mg.c)){ endMini(true); return; }
+  const dt=Math.min(0.05,(now-mg.last)/1000); mg.last=now; mg.t-=dt;
+  const el=30-mg.t; mg.spawn-=dt;
+  if(mg.spawn<=0){ mg.spawn=Math.max(0.3,0.62-el*0.011); const r=Math.random();
+    mg.items.push({x:rand(10,150), y:-10, v:rand(55,75)+el*2.4, type:(unlocked('goldmini')&&r<0.07)?'gold':r<0.2?'bug':'peach'}); }
+  for(const it of mg.items){ it.y+=it.v*dt;
+    if(!it.done && it.y>=172 && it.y<=186 && Math.abs(it.x-mg.bx)<14){ it.done=true;
+      if(it.type==='bug'){ mg.score=Math.max(0,mg.score-3); mg.hit=-0.35; sfx('no'); buzz(20); }
+      else { mg.score+=it.type==='gold'?5:1; mg.hit=0.25; sfx(it.type==='gold'?'coin':'pet'); } } }
+  mg.items=mg.items.filter(it=>!it.done && it.y<215);
+  const g=mg.g;
+  g.fillStyle='#bfe6ff'; g.fillRect(0,0,160,200); g.fillStyle='#e6f6ff'; g.fillRect(14,30,30,6); g.fillRect(104,52,26,5);
+  g.fillStyle='#4c9a48'; for(let x=-6;x<170;x+=20){ g.fillRect(x,0,18,9); g.fillRect(x+4,9,10,4); }
+  g.fillStyle='#6cc35a'; for(let x=4;x<170;x+=20){ g.fillRect(x,0,12,6); }
+  g.fillStyle='#8fd26a'; g.fillRect(0,188,160,12); g.fillStyle='#6cb94e'; for(let x=0;x<160;x+=5) g.fillRect(x,188,2,2);
+  for(const it of mg.items){ const img=it.type==='bug'?icBug:it.type==='gold'?icGold:icPeach; g.drawImage(img, Math.round(it.x-img.width), Math.round(it.y-img.height), img.width*2, img.height*2); }
+  if(mg.hit>0){ g.fillStyle='rgba(255,240,150,.6)'; g.fillRect(Math.round(mg.bx)-14,170,28,4); mg.hit-=dt; }
+  if(mg.hit<0){ g.fillStyle='rgba(220,60,60,.4)'; g.fillRect(Math.round(mg.bx)-14,170,28,18); mg.hit+=dt; }
+  g.drawImage(icBasket, Math.round(mg.bx)-12, 174, 24, 14);
+  $('mgScore').textContent=mg.score+'점'; $('mgTime').textContent=Math.max(0,Math.ceil(mg.t))+'초';
+  if(mg.t<=0){ endMini(false); return; }
+  requestAnimationFrame(mgLoop);
+}
+function endMini(aborted){
+  const m=mg; mg=null; if(!m) return;
+  const score=m.score, best=score>S.mini.best; if(best) S.mini.best=score;
+  S.stats.mini=(S.stats.mini||0)+1; S.coins+=score; save(); updHud(); gainXP(Math.ceil(score/3));
+  if(aborted){ toast(`복숭아 받기 ${score}점 (+${score}코인)`); return; }
+  openModal('복숭아 받기 끝!', `<div class="eat"><img src="${asURL(icBasket,8)}" alt="" style="width:84px">
+    <p style="font-size:17px;margin:12px 0 4px">${score}점${best&&score>0?' (최고 기록!)':''}</p>
+    <p class="small" style="margin:0 0 6px">${score}코인을 받았어요. 오늘 남은 판 ${miniLeft()}/${miniMax()}</p>
+    ${miniLeft()?'<button class="btn wide pink" id="mgAgain">한 판 더</button>':''}<button class="btn wide" id="mgOk">닫기</button></div>`);
+  if($('mgAgain')) $('mgAgain').onclick=startMini; $('mgOk').onclick=closeModal;
+}
+
+// ================= 놀이: 고양이와 놀아 주기 =================
+let cp=null;
+const canCatPlay = ()=> cat && cat.field===curField && unlocked('catplay') && S.cat.aff>=50 && !cat.played && cat.state!=='leave' && cat.state!=='hunt';
+function startCatPlay(){
+  if(!canCatPlay()) return; cat.played=true;
+  openModal('고양이와 놀아 주기', `<div class="mghud"><span id="cpScore">냥냥 펀치 0번</span><span id="cpTime">15초</span></div>
+    <canvas class="mg" id="cpCv" width="160" height="120" style="background:#9fd987"></canvas>
+    <p class="small" style="margin:6px 0 0">손가락으로 강아지풀을 흔들어 주세요. ${esc(S.cat.name||'고양이')}가 잡으면 냥냥 펀치!</p>`);
+  const c=$('cpCv'), g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+  cp={c,g,t:15,n:0,tx:115,ty:45,toy:{x:115,y:45},k:{x:35,y:100,vx:0,vy:0,p:0,cool:0.6,dir:0,got:false,a:0},hearts:0,last:performance.now()};
+  const mv=e=>{ if(!cp) return; const r=c.getBoundingClientRect(); cp.tx=clamp((e.clientX-r.left)/r.width*160,8,152); cp.ty=clamp((e.clientY-r.top)/r.height*120,8,96); };
+  c.addEventListener('pointerdown',e=>{ e.preventDefault(); mv(e); }); c.addEventListener('pointermove',e=>{ e.preventDefault(); mv(e); });
+  requestAnimationFrame(cpLoop);
+}
+function cpLoop(now){
+  if(!cp) return;
+  if($('modal').hidden || !document.body.contains(cp.c)){ endCatPlay(true); return; }
+  const dt=Math.min(0.05,(now-cp.last)/1000); cp.last=now; cp.t-=dt;
+  const toy=cp.toy, k=cp.k; toy.x+=(cp.tx-toy.x)*Math.min(1,dt*10); toy.y+=(cp.ty-toy.y)*Math.min(1,dt*10);
+  k.cool-=dt; k.a+=dt;
+  const gx=toy.x, gy=toy.y+14, dx=gx-k.x, dy=gy-k.y, d=Math.hypot(dx,dy);
+  if(Math.abs(dx)>1 && k.p<=0) k.dir = dx<0?1:0;
+  if(k.p>0){ k.p-=dt; k.x+=k.vx*dt; k.y+=k.vy*dt;
+    if(!k.got && Math.hypot(gx-k.x,gy-k.y)<9){ k.got=true; cp.n++; cp.hearts=0.7; sfx('meow'); buzz(10); } }
+  else if(d<36 && k.cool<=0){ k.p=0.22; k.vx=dx/0.22; k.vy=dy/0.22; k.cool=0.85; k.got=false; }
+  else if(d>3){ const sp=36; k.x+=dx/d*sp*dt; k.y+=dy/d*sp*dt; }
+  k.x=clamp(k.x,10,150); k.y=clamp(k.y,18,116);
+  const g=cp.g; g.fillStyle='#9fd987'; g.fillRect(0,0,160,120); g.fillStyle='#8fd26a'; for(let y=6;y<120;y+=12) for(let x=(y/12%2)*8;x<160;x+=16) g.fillRect(x,y,8,6);
+  g.fillStyle='#ffffff'; for(const [fx,fy] of [[20,20],[130,90],[70,108],[140,15]]){ g.fillRect(fx,fy,1,1); g.fillRect(fx-1,fy+1,3,1); g.fillRect(fx,fy+2,1,1); }
+  g.fillStyle='rgba(90,140,60,.6)'; g.fillRect(Math.round(toy.x),Math.round(toy.y)+9,1,Math.max(0,120-toy.y));
+  g.drawImage(icFeather, Math.round(toy.x)-5, Math.round(toy.y)-9, 10, 18);
+  const CS=catSet(); const img = k.p>0 ? CS.A[k.dir] : d>3 ? (Math.floor(k.a*10)%2?CS.A:CS.B)[k.dir] : CS.sit[k.dir];
+  g.fillStyle='rgba(60,90,40,.3)'; g.fillRect(Math.round(k.x)-14,Math.round(k.y)-1,28,3);
+  g.drawImage(img, Math.round(k.x)-16, Math.round(k.y)-img.height*2+(k.p>0?-3:0), 32, img.height*2);
+  if(cp.hearts>0){ cp.hearts-=dt; g.drawImage(icHeart, Math.round(k.x)-5, Math.round(k.y)-26-Math.round((0.7-cp.hearts)*12), 10, 8); }
+  $('cpScore').textContent=`냥냥 펀치 ${cp.n}번`; $('cpTime').textContent=Math.max(0,Math.ceil(cp.t))+'초';
+  if(cp.t<=0){ endCatPlay(false); return; }
+  requestAnimationFrame(cpLoop);
+}
+function endCatPlay(aborted){
+  const m=cp; cp=null; if(!m) return;
+  const aff=Math.min(10,2+m.n), coins=m.n*2;
+  S.cat.aff=Math.min(100,S.cat.aff+aff); S.coins+=coins; S.stats.catplay=(S.stats.catplay||0)+1; save(); updHud(); gainXP(5);
+  if(cat){ cat.state='happy'; cat.timer=20; }
+  if(aborted){ toast(`고양이와 놀았어요! 호감도 +${aff}`); return; }
+  openModal('재밌게 놀았어요!', `<div class="eat"><img src="${asURL(catSit,6)}" alt="" style="width:96px">
+    <p style="font-size:16px;margin:12px 0 4px">냥냥 펀치 ${m.n}번!</p><p class="small" style="margin:0 0 6px">호감도 +${aff}${coins?`, ${coins}코인`:''}</p>
+    <button class="btn wide" id="cpOk">닫기</button></div>`);
+  $('cpOk').onclick=closeModal;
+}
+
+// ================= 오늘의 농장 (할 일, 놀이, 레벨) =================
+const QICON = ()=>({harvest:icPeach, water:icDrop, prune:icScis, bugs:icBug, bags:icBagI, birds:BIRD.dn[0], orders:icBook, jumak:icLantern, sell:icCoin, churu:icChuru, mini:icBasket});
+function openHub(tab){
+  ensureDaily(); tab=tab||'quest';
+  let h=tabs([['quest','오늘의 할 일'],['play','놀이'],['lv','농장 레벨']], tab, 'tab');
+  if(tab==='quest'){
+    h+=`<p class="small" style="margin:0 0 2px">매일 새로운 할 일이 나와요. 하나 끝낼 때마다 ${QUEST_COINS}코인, 다 끝내면 보상 상자를 열 수 있어요.</p>`;
+    S.daily.quests.forEach((q,k)=>{ const d=qDef(q.id), pr=qProg(q);
+      h+=`<div class="row"><img src="${asURL(QICON()[q.id]||icPeach)}" alt="" style="object-fit:contain"><div class="t"><b>${d.text.replace('{n}',q.n)}</b>
+        <div class="bar"><i style="width:${Math.round(pr/q.n*100)}%"></i></div><small>${pr} / ${q.n}</small></div>
+        ${q.done?'<span class="lv">완료</span>':`<button class="btn" data-q="${k}" ${qReady(q)?'':'disabled'}>받기</button>`}</div>`; });
+    const all=S.daily.quests.every(q=>q.done);
+    h+=`<button class="btn wide ${all&&!S.daily.chest?'pink':''}" id="qChest" ${all&&!S.daily.chest?'':'disabled'}><img src="${asURL(icGift)}" alt="">${S.daily.chest?'오늘 보상 상자는 열었어요. 내일 또 만나요!':'보상 상자 열기'}</button>`;
+  } else if(tab==='play'){
+    const ok=unlocked('mini'), left=ok?miniLeft():0;
+    h+=`<div class="row"><img src="${asURL(icBasket)}" alt="" style="object-fit:contain"><div class="t"><b>복숭아 받기</b>
+        <small>${ok?`떨어지는 복숭아를 바구니로 받아요. 오늘 남은 판 ${left}/${miniMax()}, 최고 ${S.mini.best}점`:'농장 레벨 2에 열려요'}</small></div>
+        ${ok?`<button class="btn" id="pMini" ${left?'':'disabled'}>시작</button>`:'<span class="lv">Lv 2</span>'}</div>`;
+    h+=`<div class="row"><img src="${asURL(catSit)}" alt="" style="object-fit:contain"><div class="t"><b>고양이와 놀아 주기</b>
+        <small>${!unlocked('catplay')?'농장 레벨 3에 열려요':S.cat.aff<50?`고양이 호감도 50부터 할 수 있어요 (지금 ${S.cat.aff})`:'고양이가 놀러 오면 화면에 놀아 주기 버튼이 떠요'}</small></div>
+        ${canCatPlay()?'<button class="btn" id="pCat">놀기</button>':!unlocked('catplay')?'<span class="lv">Lv 3</span>':''}</div>`;
+    h+=`<div class="row"><img src="${asURL(bflyA)}" alt="" style="object-fit:contain"><div class="t"><b>깜짝 손님</b>
+        <small>가끔 황금 나비나 반짝이는 옛날 동전이 나타나요. 놓치기 전에 톡!${unlocked('peddler')?' 떠돌이 행상도 가끔 들러요.':' 농장 레벨 6부터는 떠돌이 행상도 와요.'}</small></div></div>`;
+  } else {
+    const L=levelOf(S.xp);
+    h+=`<div class="catcard"><img src="${asURL(icTree,6)}" alt="" style="width:64px"><div style="flex:1">
+        <div style="font-size:16px">농장 레벨 ${L.lv}</div><small style="opacity:.75">${titleOf(L.lv)}</small>
+        <div class="bar"><i style="width:${Math.round(L.cur/L.need*100)}%"></i></div><small style="opacity:.75">다음 레벨까지 ${L.need-L.cur} 경험치</small></div></div>
+      <p class="small" style="margin:8px 0 2px">수확, 의뢰, 오늘의 할 일, 놀이로 경험치가 쌓여요.</p>`;
+    for(const u of UNLOCKS) h+=`<div class="ul ${L.lv>=u.lv?'':'lock'}"><span class="lvtag">Lv ${u.lv}</span><span>${u.text}</span>${L.lv>=u.lv?'<span class="ok">열림</span>':''}</div>`;
+    h+=`<button class="btn wide pink" id="pShare">내 농장 자랑하기</button>`;
+  }
+  openModal('오늘의 농장', h);
+  $('mBody').querySelectorAll('button[data-tab]').forEach(b=>b.onclick=()=>openHub(b.dataset.tab));
+  $('mBody').querySelectorAll('button[data-q]').forEach(b=>b.onclick=()=>{ const q=S.daily.quests[+b.dataset.q]; if(!qReady(q)) return;
+    q.done=true; S.coins+=QUEST_COINS; sfx('coin'); save(); updHud(); gainXP(10); if($('modal').hidden===false && $('mTitle').textContent==='오늘의 농장') openHub('quest'); });
+  if($('qChest')) $('qChest').onclick=()=>{ if(S.daily.chest || !S.daily.quests.every(q=>q.done)) return; S.daily.chest=true;
+    const c=CHEST_COINS+farmLv()*5; S.coins+=c; let extra=''; const r=Math.random();
+    if(r<0.35){ S.gold++; S.stats.gold++; extra=', 황금 복숭아 1개'; } else if(r<0.65){ S.buff.grow=Math.max(Date.now(),S.buff.grow)+30*60000; extra=', 30분 동안 성장 1.5배'; }
+    sfx('buy'); buzz(30); save(); updHud(); renderBuffs(); toast(`보상 상자를 열었어요! ${c}코인${extra}`,3500); gainXP(30); if($('mTitle').textContent==='오늘의 농장') openHub('quest'); };
+  if($('pMini')) $('pMini').onclick=startMini;
+  if($('pCat')) $('pCat').onclick=startCatPlay;
+  if($('pShare')) $('pShare').onclick=shareFarm;
+}
+function showLevelUp(from,L){
+  const news=UNLOCKS.filter(u=>u.lv>from && u.lv<=L);
+  openModal(`농장 레벨 ${L}!`, `<div class="eat"><img src="${asURL(icTree,8)}" alt="" style="width:72px">
+    <p style="font-size:16px;margin:10px 0 2px">${titleOf(L)}</p>
+    ${news.length?`<p class="small" style="margin:8px 0 2px">새로 열린 것</p>${news.map(u=>`<div class="ul"><span>${u.text}</span></div>`).join('')}`:'<p class="small">조금만 더 키우면 새로운 게 열려요!</p>'}
+    <button class="btn wide" id="luOk">좋아요</button><button class="btn wide pink" id="luShare">내 농장 자랑하기</button></div>`);
+  $('luOk').onclick=closeModal; $('luShare').onclick=shareFarm;
+}
+
+// ================= 내 농장 자랑 카드 =================
+async function shareFarm(){
+  const L=levelOf(S.xp), sc=3, pad=28, top=96, cw=W*sc+pad*2, ch=top+H*sc+pad+150;
+  try{ await document.fonts.load('20px Galmuri11'); }catch(e){}
+  const c=document.createElement('canvas'); c.width=cw; c.height=ch; const g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+  const F="Galmuri11, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif";
+  g.fillStyle='#ffe3d6'; g.fillRect(0,0,cw,ch);
+  g.fillStyle='#5a3428'; g.textAlign='center';
+  g.font=`30px ${F}`; g.fillText('이가네 복숭아', cw/2, 46);
+  g.font=`19px ${F}`; g.fillStyle='#c0504a'; g.fillText(S.ss&&S.ss.found ? `Lv ${L.lv} 쑝이네 복숭아밭` : `Lv ${L.lv} ${titleOf(L.lv)}의 복숭아밭`, cw/2, 78);
+  g.fillStyle='#7a4a3a'; g.fillRect(pad-6,top-6,W*sc+12,H*sc+12+6);
+  g.drawImage(cvs, pad, top, W*sc, H*sc);
+  const found=DEX_VARS.filter(v=>S.dex[v.id]).length, planted=S.trees.filter(t=>t.u).length;
+  let y=top+H*sc+44; g.fillStyle='#5a3428'; g.font=`19px ${F}`;
+  g.fillText(`복숭아 ${S.stats.harvest}개 수확   도감 ${found}/${DEX_VARS.length}   나무 ${planted}그루`, cw/2, y); y+=32;
+  g.fillText(S.cat.name ? `고양이 ${S.cat.name}와 함께 농사짓고 있어요` : `고양이 호감도 ${S.cat.aff}`, cw/2, y); y+=36;
+  const url = location.protocol.startsWith('http') ? location.href.split('#')[0].split('?')[0] : '';
+  g.font=`15px ${F}`; g.fillStyle='#9a6a5a'; g.fillText(url ? url.replace(/^https?:\/\//,'') : '이가네 복숭아에서 만나요!', cw/2, y);
+  const blob=await new Promise(r=>c.toBlob(r,'image/png'));
+  try{ const file=new File([blob],'igane-peach.png',{type:'image/png'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:'이가네 복숭아', text:'내 복숭아밭 구경하러 와요!'+(url?' '+url:'')}); S.stats.share=(S.stats.share||0)+1; save(); return; }
+  }catch(e){ if(e && e.name==='AbortError') return; }
+  const data=c.toDataURL('image/png');
+  openModal('내 농장 자랑 카드', `<img class="shareimg" src="${data}" alt="내 농장 카드">
+    <p class="small" style="margin:8px 0 2px">이미지를 길게 눌러 저장하거나 친구에게 보내 주세요.</p>
+    <a class="btn wide" download="igane-peach.png" href="${data}" style="text-decoration:none">이미지 저장</a>
+    ${url?'<button class="btn wide" id="shCopy">게임 주소 복사</button>':''}`);
+  if($('shCopy')) $('shCopy').onclick=()=>copyText(url,'게임 주소를 복사했어요. 카톡에 붙여 넣어 보내 보세요');
+}
+
+// ================= 비밀 이스터에그 (쑝) =================
+let ssFx = 0, dad = null;
+const ssName = n => SSHONG.names.includes(String(n||'').replace(/\s/g,''));
+const ssDay = ()=> SSHONG.dates.includes(todayKey().slice(5));
+const ssGlow = ()=> Date.now()<ssFx || ssDay();
+function ssKey(str){ let h=2166136261; for(const ch of str){ h^=ch.charCodeAt(0); h=Math.imul(h,16777619); } return h>>>0; }
+function ssOpen(code){
+  if(ssKey(code+'#check').toString(36)!==SSHONG.lock) return null;
+  const bin=atob(SSHONG.letter), out=new Uint8Array(bin.length); let x=ssKey(code+'igane-peach')||1;
+  for(let i=0;i<bin.length;i++){ x^=x<<13; x^=x>>>17; x^=x<<5; x>>>=0; out[i]=bin.charCodeAt(i)^(x&255); }
+  return new TextDecoder().decode(out);
+}
+function ssTrigger(kind, i){
+  S.ss = S.ss || {};
+  const first = !S.ss.found;
+  S.ss.found = true; S.ss.unread = SSHONG.showLetter && (S.ss.unread || first);
+  if(kind==='tree') S.trees[i].heart = true;
+  if(kind==='cat') S.cat.bow = true;
+  ssFx = Date.now()+9000; save();
+  closeModal(); sfx('harvest'); buzz([20,60,20,60,40]);
+  for(let k=0;k<6;k++) setTimeout(()=>burst(rand(20,140),rand(70,220),'heart',4), k*250);
+  ssMusic();
+  if(first){
+    setTimeout(()=>{ openModal('어, 이 이름은...!', `<div class="eat"><img src="${asURL(VAR_IMG.sshong.icon,8)}" alt="" style="width:64px">
+      <p style="font-size:15px;margin:12px 0 6px">이 복숭아밭은 사실,<br>소영이네 아버지가 처음 심으신 복숭아나무에서 시작됐어요.</p>
+      <p class="small" style="margin:0 0 8px">그래서 이 이름을 부르면 농장이 조금 특별해져요.${SSHONG.showLetter?'<br>울타리 위에 분홍 편지가 하나 도착했어요.':'<br>밭에 누가 찾아왔는지 둘러보세요.'}</p>
+      <button class="btn wide pink" id="ssOk">${SSHONG.showLetter?'편지 보러 가기':'좋아요'}</button></div>`);
+      $('ssOk').onclick=()=>{ closeModal(); if(SSHONG.showLetter) setTimeout(openLetter,250); }; spawnDad(true); }, 1600);
+  } else { toast('농장이 분홍빛으로 물들었어요',2400); }
+}
+function spawnDad(now){
+  if(dad || !S.ss || !S.ss.found) return;
+  if(!now && S.ss.dadDay===todayKey()) return;
+  dad={x:-10, y:150, tx:80, field:curField, life:80, a:0};
+}
+function updateDad(dt){
+  if(!dad) return; dad.a+=dt; dad.life-=dt;
+  if(dad.life>5) dad.x+=clamp(dad.tx-dad.x,-18*dt,18*dt); else dad.x-=26*dt;
+  if(dad.life<=0 || dad.x<-14) dad=null;
+}
+const DAD_LINES = [
+  '소영이 왔구나! 아빠가 제일 잘 익은 걸로 골라 놨다.',
+  '올해 복숭아는 유난히 달다. 다 우리 소영이 덕분이지.',
+  '지환이도 같이 왔나? 둘이 사이좋게 나눠 먹어라.',
+  '나무는 정성 들인 만큼 열매를 맺는단다.',
+  '이 밭이 다 너희들 놀이터다. 언제든 놀러 와라.',
+];
+function talkDad(){
+  const gift = S.ss.dadDay!==todayKey();
+  const line = DAD_LINES[(S.ss.dadTalk||0)%DAD_LINES.length]; S.ss.dadTalk=(S.ss.dadTalk||0)+1;
+  if(gift){ S.ss.dadDay=todayKey(); S.inv.sshong=(S.inv.sshong||0)+3; discover('sshong',3); gainXP(10); }
+  save(); updHud(); sfx('pet');
+  openModal('이가네 농장 아저씨', `<div class="eat"><img src="${asURL(dadNpc,6)}" alt="" style="width:60px;height:72px">
+    <p style="font-size:15px;margin:12px 0 6px">"${line}"</p>
+    ${gift?`<p class="small" style="margin:0 0 6px">쑝복숭아 3개를 받았어요</p>`:''}<button class="btn wide" id="dadOk">고맙습니다!</button></div>`);
+  $('dadOk').onclick=closeModal;
+  if(dad) dad.life=Math.min(dad.life,8);
+}
+function openLetter(){
+  openModal('소영에게 온 편지', `<div class="eat"><img src="${asURL(icEnvelope,7)}" alt="" style="width:63px">
+    <p style="margin:12px 0 4px">편지가 잠겨 있어요</p><p class="small" style="margin:0 0 10px">힌트: ${esc(SSHONG.hint)}</p>
+    <input class="ss-in" id="ssCode" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="····">
+    <button class="btn wide pink" id="ssGo" style="margin-top:12px">열어 보기</button></div>`);
+  const go=()=>{ const v=$('ssCode').value.trim(), txt=ssOpen(v);
+    if(txt===null){ const el=$('ssCode'); el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); sfx('no'); buzz(40); toast('다시 한번 생각해 봐요'); return; }
+    S.ss.unread=false; S.ss.read=(S.ss.read||0)+1; save(); ssFx=Date.now()+8000; ssMusic();
+    openModal('소영에게', `<div class="letter">${esc(txt)}</div><button class="btn wide" id="ssClose" style="margin-top:10px">편지 접기</button>`);
+    $('ssClose').onclick=closeModal; };
+  $('ssGo').onclick=go; $('ssCode').onkeydown=e=>{ if(e.key==='Enter') go(); };
+}
+function ssMusic(){
+  if(S.muted) return;
+  try{ audioCtx(); const now=actx.currentTime;
+    const notes=[['C6',0],['E6',.18],['G6',.36],['C7',.54],['B6',.9],['G6',1.08],['A6',1.26],['E6',1.44],['F6',1.8],['E6',1.98],['D6',2.16],['C6',2.34]];
+    for(const [n,t] of notes){ const o=actx.createOscillator(), g=actx.createGain(); o.type='sine'; o.frequency.value=noteHz(n);
+      g.gain.setValueAtTime(0.0001,now+t); g.gain.exponentialRampToValueAtTime(0.07,now+t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,now+t+0.7);
+      o.connect(g).connect(actx.destination); o.start(now+t); o.stop(now+t+0.75); }
+  }catch(e){}
+}
+const ssPetals = Array.from({length:26},()=>({x:rand(0,160),y:rand(-256,256),v:rand(10,22),p:rand(0,6)}));
+function drawSs(t){
+  if(!ssGlow()) return;
+  ctx.fillStyle='rgba(255,170,200,.10)'; ctx.fillRect(0,0,W,H);
+  for(const p of ssPetals){ p.y+=p.v*0.016; p.p+=0.03; p.x+=Math.sin(p.p)*0.3; if(p.y>H+4){ p.y=-6; p.x=rand(0,160); }
+    if(Math.floor(p.p*3)%5===0) ctx.drawImage(icHeart, Math.round(p.x), Math.round(p.y));
+    else { RR(ctx,Math.round(p.x),Math.round(p.y),2,1,'#ffb0c8'); RR(ctx,Math.round(p.x)+1,Math.round(p.y)+1,1,1,'#ff8fb0'); } }
+}
+
+// ================= 이스터에그 =================
+const EGG_KEYS = ['pond','moon','dance','catcolor','star','april','fairy','nap'];
+function eggs(){ S.eggs = S.eggs || {}; S.eggs.found = S.eggs.found || {}; return S.eggs; }
+function eggFound(key){ const E=eggs(); if(E.found[key]) return; E.found[key]=Date.now(); save(); setTimeout(()=>floatText(W/2,62,'비밀 발견!','gold'),900); }
+const nowHM = ()=>{ const d=new Date(); return d.getHours()*100+d.getMinutes(); };
+
+// 1) 연못의 산신령: 연못을 빠르게 7번
+let pondTaps=[];
+function pondTap(){
+  burst(80,244,'water',10); floatText(80,236,'퐁당','blue'); sfx('water');
+  const now=performance.now(); pondTaps=pondTaps.filter(t=>now-t<2500); pondTaps.push(now);
+  if(pondTaps.length>=7 && eggs().pondDay!==todayKey()){ pondTaps=[]; eggs().pondDay=todayKey(); save();
+    burst(80,240,'water',30); buzz([30,40,30]); setTimeout(showSansin,500); }
+}
+function showSansin(){
+  const ask=['이 황금 복숭아가 네 복숭아냐?','이 은 복숭아가 네 복숭아냐?'];
+  openModal('연못의 산신령', `<div class="eat"><img src="${asURL(sansin,6)}" alt="" style="width:72px;height:96px">
+    <p style="margin:10px 0 2px">"허허, 연못을 이렇게 두드리는 게 누구냐."</p>
+    <p style="margin:2px 0 10px">"${ask[0]} 아니면 ${ask[1]}"</p>
+    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:6px"><img src="${asURL(icGold,5)}" alt="" style="width:35px"><img src="${asURL(icSilver,5)}" alt="" style="width:35px"></div>
+    <button class="btn wide" data-sx="gold">황금 복숭아요</button><button class="btn wide" data-sx="silver">은 복숭아요</button>
+    <button class="btn wide pink" data-sx="honest">아니요, 그냥 복숭아예요</button></div>`);
+  $('mBody').querySelectorAll('button[data-sx]').forEach(b=>b.onclick=()=>{
+    const honest=b.dataset.sx==='honest';
+    if(honest){ S.gold+=1; S.stats.gold++; S.coins+=50; discover('gold',1); gainXP(10); sfx('buy'); eggFound('pond'); }
+    else sfx('no');
+    save(); updHud();
+    openModal('연못의 산신령', `<div class="eat"><img src="${asURL(sansin,6)}" alt="" style="width:72px;height:96px">
+      <p style="margin:12px 0 6px">${honest?'"허허, 정직하구나! 황금 복숭아와 50냥을 상으로 주마."':'"욕심이 과하구나! 내일 다시 오너라."'}</p>
+      <p class="small" style="margin:0 0 6px">${honest?'황금 복숭아 1개, 50코인을 받았어요':'산신령이 연못 속으로 사라졌어요'}</p>
+      <button class="btn wide" id="sxOk">닫기</button></div>`);
+    $('sxOk').onclick=closeModal;
+  });
+}
+
+// 3) 달토끼: 밤에 달 누르기
+let rabbitUntil=0, tteok=null;
+function moonTap(){
+  if(eggs().moonDay===todayKey()){ floatText(130,26,'쿵떡쿵떡','gold'); return; }
+  eggs().moonDay=todayKey(); rabbitUntil=Date.now()+5000; save(); sfx('pet');
+  setTimeout(()=>{ tteok={x:130,y:18,vy:10,field:curField}; }, 2600);
+}
+function updateTteok(dt){ if(!tteok) return; tteok.vy+=60*dt; tteok.y+=tteok.vy*dt; if(tteok.y>=200){ tteok.y=200; tteok.vy=0; tteok.landed=true; } }
+function tteokTap(x,y){ if(!tteok || !tteok.landed || Math.hypot(tteok.x-x,tteok.y-y)>10) return false;
+  tteok=null; S.coins+=20; gainXP(5); floatText(130,190,'달토끼 떡 +20','gold'); burst(130,200,'spark',10); sfx('coin'); eggFound('moon'); save(); updHud();
+  toast('달토끼가 방아 찧은 떡을 나눠 줬어요'); return true; }
+function drawMoonRabbit(t){
+  const cx=130, cy=12; ctx.fillStyle='rgba(255,240,170,.25)'; ctx.fillRect(cx-11,cy-11,23,23);
+  for(let y=-7;y<=7;y++) for(let x=-7;x<=7;x++) if(x*x+y*y<=49) RR(ctx,cx+x,cy+y,1,1,'#fff3b0');
+  const up=Math.floor(t*4)%2; const R2=(x,y,w,h)=>RR(ctx,cx+x,cy+y,w,h,'#c9bfa8');
+  R2(-4,-3,1,3); R2(-2,-3,1,3); R2(-5,0,4,3); R2(-4,3,3,1);  // 토끼
+  R2(1,up?-3:-1,1,3); R2(1,up?-3:-1,3,1);                       // 절굿공이
+  R2(1,2,5,2); R2(2,4,3,1);                                    // 절구
+}
+
+// 4) 춤추는 허수아비: 5번 연속
+let scareTaps=[], danceUntil=0;
+function scareTap(){
+  const now=performance.now(); scareTaps=scareTaps.filter(t=>now-t<2000); scareTaps.push(now);
+  floatText(80,116,'흔들','');
+  if(scareTaps.length>=5){ scareTaps=[]; danceUntil=Date.now()+5000; eggFound('dance');
+    for(let k=0;k<6;k++) setTimeout(()=>{ sfx('chirp'); floatText(rand(60,100),rand(100,115),'♪','pink'); }, k*700); }
+}
+
+// 6) 별똥별: 밤 11시 11분, 새벽 4시 44분
+let star=null, starTimer=0;
+const starTime = ()=> [2311, 444].includes(nowHM());
+function updateStar(dt){
+  if(star){ star.t+=dt; if(star.t>1.6) star=null; }
+  if(!starTime()) return;
+  starTimer-=dt; if(!star && starTimer<=0){ starTimer=rand(4,7); star={x0:rand(40,150), y0:rand(2,10), t:0}; }
+}
+const starPos = ()=> star ? [star.x0 - star.t*70, star.y0 + star.t*22] : null;
+function starTap(x,y){
+  const p=starPos(); if(!p || Math.hypot(p[0]-x,p[1]-y)>14) return false;
+  const key=todayKey()+'-'+nowHM(); star=null;
+  if(eggs().starKey===key){ floatText(p[0],p[1]+8,'반짝','gold'); return true; }
+  eggs().starKey=key; S.gold+=1; S.stats.gold++; discover('gold',1); gainXP(10); save(); updHud(); sfx('buy'); buzz(30); eggFound('star');
+  for(let k=0;k<8;k++) burst(rand(20,140),rand(10,60),'spark',2);
+  toast('소원을 빌었어요! 별똥별이 황금 복숭아를 떨어뜨렸어요',3500); return true;
+}
+function drawStar(){ const p=starPos(); if(!p) return; const a=1-star.t/1.6;
+  ctx.globalAlpha=Math.max(0,a); RR(ctx,Math.round(p[0]),Math.round(p[1]),2,2,'#ffffff');
+  for(let k=1;k<10;k++){ ctx.globalAlpha=Math.max(0,a*(1-k/10)); RR(ctx,Math.round(p[0]+k*3),Math.round(p[1]-k),2,1,'#fff6b0'); }
+  ctx.globalAlpha=1; }
+
+// 7) 만우절
+const aprilFools = ()=> todayKey().slice(5)==='04-01' || window.__april===true;
+function checkApril(){
+  if(!aprilFools()) return; const y=new Date().getFullYear(); if(eggs().april===y) return;
+  eggs().april=y; eggFound('april'); save();
+  modalQueue.push(()=>{ openModal('의뢰판에 쪽지가 붙어 있어요', `<div class="eat"><img src="${asURL(icApple,8)}" alt="" style="width:56px">
+    <p style="margin:12px 0 4px">"속았지! 오늘은 사과 농장이야."</p><p class="small" style="margin:0 0 8px">옆집 꼬마가 복숭아를 전부 사과로 바꿔 놨대요. 내일이면 돌아와요.</p>
+    <button class="btn wide" id="apOk">하하, 알겠어</button></div>`); $('apOk').onclick=closeModal; });
+}
+
+// 8) 1000번째 수확: 복숭아 요정
+let fairy=null;
+function checkFairy(before){
+  if(eggs().fairy || before>=1000 || S.stats.harvest<1000) return;
+  eggs().fairy=true; eggFound('fairy'); S.coins+=100; save(); updHud();
+  for(let k=0;k<10;k++) setTimeout(()=>burst(rand(30,130),rand(80,200),'spark',3), k*120);
+  setTimeout(()=>{ const idle=modalIdle(); modalQueue.push(()=>{ openModal('복숭아 요정', `<div class="eat"><img src="${asURL(fairySpr[0],10)}" alt="" style="width:50px">
+    <p style="margin:12px 0 4px">"안녕! 나는 복숭아 요정이야.<br>천 개나 키워 줘서 정말 고마워!"</p>
+    <p class="small" style="margin:0 0 8px">100코인을 받았어요. 이제 요정이 밭을 날아다니며 가끔 나무를 쑥쑥 키워 줘요.</p>
+    <button class="btn wide" id="fyOk">반가워!</button></div>`); $('fyOk').onclick=closeModal; }); if(idle) nextModal(); }, 900);
+}
+function updateFairy(dt){
+  if(!eggs().fairy) return;
+  if(!fairy) fairy={x:80,y:120,tx:80,ty:120,t:0,cd:rand(60,120)};
+  fairy.t+=dt; fairy.cd-=dt;
+  if(Math.hypot(fairy.tx-fairy.x,fairy.ty-fairy.y)<3){ fairy.tx=rand(20,140); fairy.ty=rand(70,220); }
+  fairy.x+=(fairy.tx-fairy.x)*Math.min(1,dt*0.8); fairy.y+=(fairy.ty-fairy.y)*Math.min(1,dt*0.8)+Math.sin(fairy.t*5)*0.3;
+  if(fairy.cd<=0){ fairy.cd=rand(100,160);
+    const cand=fieldTrees(curField).filter(i=>S.trees[i].u && S.trees[i].stage<4); if(cand.length){ const i=cand[irand(0,cand.length-1)], t=S.trees[i];
+      t.growth=Math.min(99,t.growth+20); const [x,y]=P(i); fairy.tx=x; fairy.ty=y-30; setTimeout(()=>{ burst(x,y-24,'spark',8); floatText(x,y-36,'요정 가루','pink'); },1500); } }
+}
+function drawFairy(t){ if(!fairy) return; ctx.drawImage(fairySpr[Math.floor(t*8)%2], Math.round(fairy.x)-2, Math.round(fairy.y)-2);
+  if(Math.floor(t*6)%2) RR(ctx,Math.round(fairy.x)+rand(-4,4)|0,Math.round(fairy.y)+4,1,1,'#fff6b0'); }
+
+// 9) 원두막 낮잠: 낮 12시~1시
+const napTime = ()=> S.deco.pavilion && new Date().getHours()===12;
+function napTap(x,y){ if(!napTime() || x<8 || x>34 || y<16 || y>36) return false;
+  floatText(20,22,'쉿, 낮잠 중','pink'); burst(20,30,'heart',3); sfx('pet'); eggFound('nap'); return true; }
+
 // ================= 쿠폰 도전 =================
 const COUPON_RULES = {
-  dex:     {need:()=>VARIETIES.length, have:()=>VARIETIES.filter(v=>S.dex[v.id]).length},
+  dex:     {need:()=>DEX_VARS.length, have:()=>DEX_VARS.filter(v=>S.dex[v.id]).length},
   harvest: {need:()=>500,              have:()=>S.stats.harvest},
   cat:     {need:()=>80,               have:()=>S.cat.aff},
 };
@@ -1171,9 +1787,10 @@ function buySlot(i){
 function buyField(){
   if(S.fields>=FIELDS.length) return;
   const n={f:S.fields, cost:FIELDS[S.fields].cost};
+  if(farmLv()<(FIELDS[n.f].lv||1)){ toast(`농장 레벨 ${FIELDS[n.f].lv}부터 ${FIELDS[n.f].name}을 개척할 수 있어요`); sfx('no'); return; }
   if(S.coins<n.cost){ toast(`${FIELDS[n.f].name}을 개척하려면 ${n.cost}코인이 필요해요`); sfx('no'); return; }
   S.coins-=n.cost; S.fields++; S.trees[n.f*6]=newTree(true); S.trees[n.f*6+1]=newTree(true);
-  sfx('buy'); buzz(25); toast(`${FIELDS[n.f].name}을 개척했어요! 나무 두 그루를 심었어요`,3000);
+  sfx('buy'); buzz(25); toast(`${FIELDS[n.f].name}을 개척했어요! 나무 두 그루를 심었어요`,3000); gainXP(30);
   if(curField===n.f) for(const k of [0,1]){ const [x,y]=TREE_POS[k]; burst(x,y,'spark',12); }
   save(); updHud(); updField();
 }
@@ -1190,12 +1807,13 @@ function tapTree(i){
     const g = t.golden?1:0; let n=t.fruit-g; const vid = VAR[t.variety]?t.variety:'baekdo';
     let extra = 0; if(S.buff.bonus>0){ extra=2; n+=2; S.buff.bonus--; }
     let bagged=0; if(t.bag){ bagged=2; n+=2; }
+    const harvBefore=S.stats.harvest;
     S.inv[vid]=(S.inv[vid]||0)+n; S.gold+=g; S.stats.harvest+=t.fruit+extra+bagged; S.stats.gold+=g;
     const lvBefore=treeLevel(t).i; t.harvests=(t.harvests||0)+1; const lvAfter=treeLevel(t);
     if(lvAfter.i>lvBefore) setTimeout(()=>toast(`${treeName(i)}가 ${lvAfter.name}로 자랐어요! 이제 복숭아가 ${lvAfter.bonus}개 더 열려요`,3800),600);
-    discover(vid,n); if(g) discover('gold',g);
+    discover(vid,n); if(g) discover('gold',g); gainXP(n+g); checkFairy(harvBefore);
     birds.forEach(b=>{ if(b.tree===i && b.state!=='flee') flee(b,false); });
-    floatText(x,y-30,`+${n} ${VAR[vid].name}`+(g?' +황금!':'')+(bagged?' (봉지 덕분)':extra?' (새우 덕분)':''), g?'gold':'pink');
+    floatText(x,y-30,`+${n} ${aprilFools()?'사과?!':VAR[vid].name}`+(g?' +황금!':'')+(bagged?' (봉지 덕분)':extra?' (새우 덕분)':''), g?'gold':'pink');
     burst(x,y,'spark',10); sfx('harvest'); buzz(20);
     t.stage=2; t.growth=0; t.fruit=0; t.golden=false; t.variety=null; t.bag=false;
   } else if(stakeNeeded(t)){
@@ -1215,12 +1833,23 @@ function tapTree(i){
   }
   save();
 }
+// 농장 화면을 눌러 창이 열릴 때, 같은 손가락의 클릭이 새 창의 버튼을 누르지 않게 막아요
+let lastCanvasDown=0;
+document.addEventListener('click', e=>{ if(performance.now()-lastCanvasDown<450 && e.target.closest && e.target.closest('#modal')){ e.stopPropagation(); e.preventDefault(); } }, true);
 cvs.addEventListener('pointerdown',e=>{
-  e.preventDefault();
+  e.preventDefault(); lastCanvasDown=performance.now();
   const r=cvs.getBoundingClientRect(), x=(e.clientX-r.left)/r.width*W, y=(e.clientY-r.top)/r.height*H;
+  if(dad && dad.field===curField && x>dad.x-9 && x<dad.x+9 && y>dad.y-22 && y<dad.y+2){ talkDad(); return; }
+  if(SSHONG.showLetter && S.ss && S.ss.unread && x>72 && x<89 && y>40 && y<54){ openLetter(); return; }
+  if(starTap(x,y)) return;
+  if(skyPhase()==='night' && !evtIs('chuseok') && x>118 && x<142 && y<24){ moonTap(); return; }
+  if(tteokTap(x,y)) return;
+  if(napTap(x,y)) return;
+  if(S.up.scare>0 && x>73 && x<88 && y>118 && y<138){ scareTap(); return; }
+  if(tapVisitor(x,y)){ updHud(); save(); return; }
   for(const gf of gifts){ if(gf.field===curField && Math.hypot(gf.x-x,gf.y-4-y)<10){ gifts=gifts.filter(o=>o!==gf); S.coins+=gf.c; floatText(gf.x,gf.y-12,'선물 +'+gf.c,'gold'); burst(gf.x,gf.y,'spark',8); sfx('coin'); updHud(); save(); return; } }
   for(const b of bugs){ if(b.field!==curField) continue; const [bx,by]=bugPos(b);
-    if(Math.hypot(bx-x,by-y)<8){ bugs=bugs.filter(o=>o!==b); S.coins+=2; S.stats.bugs=(S.stats.bugs||0)+1;
+    if(Math.hypot(bx-x,by-y)<8){ bugs=bugs.filter(o=>o!==b); S.coins+=2; S.stats.bugs=(S.stats.bugs||0)+1; gainXP(1);
       floatText(bx,by-6,'톡! +2','green'); burst(bx,by,'dust',6); sfx('cut'); buzz(12); updHud(); save(); return; } }
   // 새 먼저
   let best=null, bd=11;
@@ -1228,9 +1857,10 @@ cvs.addEventListener('pointerdown',e=>{
   if(best){ flee(best,true); updHud(); return; }
   if(cat && cat.field===curField && cat.state!=='leave' && x>cat.x-13 && x<cat.x+13 && y>cat.y-17 && y<cat.y+4){ tapCat(); updHud(); return; }
   if(x<23 && y>44 && y<78){ renderOrders(); return; }
+  if(unlocked('mini') && x<23 && y>=78 && y<95){ openHub('play'); return; }
   if(S.deco.mailbox && x>143 && x<159 && y>54 && y<74){ renderReal(); return; }
   if(S.up.bee && x>138 && x<159 && y>72 && y<101){ collectHoney(); return; }
-  if(S.deco.pond && x>66 && x<94 && y>234 && y<250){ burst(80,244,'water',10); floatText(80,236,'퐁당','blue'); sfx('water'); return; }
+  if(S.deco.pond && x>66 && x<94 && y>234 && y<250){ pondTap(); return; }
   const i=treeAt(x,y); if(i>=0){ tapTree(i); updHud(); }
 });
 
@@ -1276,6 +1906,10 @@ function drawTreeSlot(i,t,time){
   const dry = tr.water<15, messy = tr.stage>=1 && tr.prune>=50;
   if(tr.staked){ RR(ctx,x+5,y-22,2,24,'#8b5a3c'); RR(ctx,x+5,y-22,1,24,'#a8714c'); RR(ctx,x+2,y-14,6,1,'#e8c060'); }
   ctx.drawImage(treeImg(tr.stage,dry,messy), x-24+sx, y-48);
+  if(tr.heart && tr.stage>=1){ const sc=tr.stage===1?0.55:1, oy=tr.stage===1?-3:0;
+    BLOSSOM.forEach(([bx,by],k)=>{ if(k%2 && tr.stage===1) return; const px=x+Math.round(bx*sc)+sx, py=y+Math.round(by*sc)+oy;
+      RR(ctx,px-1,py,3,1,'#ff8fb0'); RR(ctx,px,py-1,1,3,'#ff8fb0'); RR(ctx,px,py,1,1,'#fff0f4'); });
+    if(Math.floor(time*1.5+i)%6===0) ctx.drawImage(icHeart, x-2+sx, y-(tr.stage===1?30:46)); }
   const lv=treeLevel(tr).i; if(lv>0){ const c=['','#c98a4a','#c8d0d8','#ffd84a'][lv]; RR(ctx,x-15,y+1,3,3,'#5a3428'); RR(ctx,x-14,y+2,1,1,c); RR(ctx,x-15,y+1,3,1,c); }
   if(evtIs('xmas') && tr.stage>=1){ const C=['#ff5a5a','#ffe066','#7cd4ff','#9aff8a']; BLOSSOM.slice(0,tr.stage===1?3:9).forEach(([bx,by],k)=>{
     if((Math.floor(time*2)+k)%3) { const sc=tr.stage===1?0.55:1; RR(ctx,x+Math.round(bx*sc)+sx,y+Math.round(by*sc)+(tr.stage===1?-3:0),1,1,C[k%4]); } }); }
@@ -1284,7 +1918,7 @@ function drawTreeSlot(i,t,time){
     for(let k=0;k<tr.fruit && k<FRUIT_POS.length;k++){ const [fx_,fy]=FRUIT_POS[k]; ctx.drawImage(k===0&&tr.golden?fruitG:bagRipe, x+fx_-1+sx, y+fy-2); }
   } else if(tr.stage===4){
     for(let k=0;k<tr.fruit && k<FRUIT_POS.length;k++){
-      const [fx_,fy]=FRUIT_POS[k]; ctx.drawImage(k===0&&tr.golden?fruitG:(VAR_IMG[tr.variety]||VAR_IMG.baekdo).fruit, x+fx_-2+sx, y+fy-2);
+      const [fx_,fy]=FRUIT_POS[k]; ctx.drawImage(aprilFools()?fruitApple : k===0&&tr.golden?fruitG:(VAR_IMG[tr.variety]||VAR_IMG.baekdo).fruit, x+fx_-2+sx, y+fy-2);
     }
   }
 }
@@ -1297,13 +1931,16 @@ function drawCat(t){
   if(!cat || cat.field!==curField) return;
   const moving = cat.state==='enter'||cat.state==='dash'||cat.state==='leave'||cat.state==='hunt';
   let img;
-  if(moving) img = (Math.floor(cat.a*(cat.state==='enter'?6:12))%2?CAT.A:CAT.B)[cat.dir];
-  else if(cat.state==='sleep') img=CAT.sleep[cat.dir];
-  else img=CAT.sit[cat.dir];
+  const CS=catSet();
+  if(moving) img = (Math.floor(cat.a*(cat.state==='enter'?6:12))%2?CS.A:CS.B)[cat.dir];
+  else if(cat.state==='sleep') img=CS.sleep[cat.dir];
+  else img=CS.sit[cat.dir];
   let hy = cat.state==='dash' ? -Math.round(Math.abs(Math.sin(cat.hop*14))*3) : 0;
   if(cat.state==='sleep') hy = Math.floor(t*1.5)%2 ? 0 : -0; // 숨쉬기
   ctx.fillStyle='rgba(60,90,40,.35)'; ctx.fillRect(Math.round(cat.x)-7,Math.round(cat.y)-1,14,2);
   ctx.drawImage(img, Math.round(cat.x)-8, Math.round(cat.y)-img.height+hy);
+  if(S.cat.bow){ const bx=Math.round(cat.x)-8+(cat.dir?4:9), by=Math.round(cat.y)-img.height+hy;
+    RR(ctx,bx,by,1,2,'#ff6a8a'); RR(ctx,bx+2,by,1,2,'#ff6a8a'); RR(ctx,bx+1,by+1,1,1,'#ffd0dc'); }
   if(evtIs('xmas')){ const hx=Math.round(cat.x)-8+(cat.dir?1:10), hy2=Math.round(cat.y)-img.height+hy-2;
     RR(ctx,hx,hy2+1,5,2,'#e0503c'); RR(ctx,hx+1,hy2,3,1,'#e0503c'); RR(ctx,hx+(cat.dir?0:4),hy2-1,1,1,'#ffffff'); RR(ctx,hx,hy2+2,5,1,'#ffffff'); }
   if(cat.state==='eat') ctx.drawImage(icBowl, Math.round(cat.x)+(cat.dir?-14:8), Math.round(cat.y)-3);
@@ -1321,10 +1958,18 @@ function render(t){
   drawBG(t);
   const ents=[];
   for(const i of fieldTrees(curField)) ents.push({y:P(i)[1], d:()=>drawTreeSlot(i,S.trees[i],t)});
-  if(S.up.scare>0) ents.push({y:136, d:()=>ctx.drawImage(scarecrow,75,121)});
+  if(S.up.scare>0) ents.push({y:136, d:()=>{ if(Date.now()<danceUntil){ const ph2=Math.floor(t*4)%4, dx=[0,2,0,-2][ph2], hop=ph2%2?-2:0;
+      ctx.drawImage(ph2<2?scarecrow:scarecrowF,75+dx,121+hop); } else ctx.drawImage(scarecrow,75,121); }});
   if(cat && cat.field===curField) ents.push({y:cat.y, d:()=>drawCat(t)});
   ents.push({y:74, d:()=>{ drawBoard(ctx,3,58); }});
   if(S.up.bee) ents.push({y:HIVE[1]+13, d:()=>ctx.drawImage(icHive,HIVE[0],HIVE[1])});
+  if(unlocked('mini')) ents.push({y:92, d:()=>{ ctx.drawImage(icBasket,4,84); if(miniLeft()>0 && Math.floor(t*2)%4===0){ RR(ctx,9,81,1,1,'#fff6b0'); } }});
+  if(S.deco.sotdae) ents.push({y:227, d:()=>DECO_DRAW.sotdae(ctx,148,196)});
+  if(S.deco.stone) ents.push({y:222, d:()=>DECO_DRAW.stone(ctx,4,204)});
+  for(const v of visitors) if(v.field===curField && v.type==='peddler') ents.push({y:v.y, d:()=>{
+    ctx.fillStyle='rgba(60,90,40,.3)'; ctx.fillRect(Math.round(v.x)-5,v.y-1,10,2);
+    ctx.drawImage(peddler, Math.round(v.x)-5, v.y-12+(v.life>4&&Math.abs(v.tx-v.x)>1?Math.floor(v.a*8)%2:0));
+    if(Math.abs(v.tx-v.x)<1 && v.life>4) bubble(Math.round(v.x)+9, v.y-20, icCoin, t); }});
   if(evtIs('xmas')) ents.push({y:166, d:()=>ctx.drawImage(snowman,75,153)});
   if(S.deco.pinwheel) ents.push({y:72, d:()=>DECO_DRAW.pinwheel(ctx,76,58,t)});
   if(S.deco.mailbox) ents.push({y:72, d:()=>DECO_DRAW.mailbox(ctx,148,58)});
@@ -1336,7 +1981,7 @@ function render(t){
     const tr=S.trees[i]; if(!tr.u) continue; const [x,y]=P(i);
     const top = tr.stage===0 ? y-20 : tr.stage===1 ? y-32 : y-44;
     let icon=null;
-    if(tr.stage===4 && tr.fruit>0) icon = tr.golden?icGold:(VAR_IMG[tr.variety]||VAR_IMG.baekdo).icon;
+    if(tr.stage===4 && tr.fruit>0) icon = aprilFools()?icApple : tr.golden?icGold:(VAR_IMG[tr.variety]||VAR_IMG.baekdo).icon;
     else if(stakeNeeded(tr)) icon=icStake;
     else if(tr.water<35) icon=icDrop;
     else if(tr.stage>=1 && tr.prune>=50) icon=icScis;
@@ -1347,9 +1992,22 @@ function render(t){
   if(S.up.bee){ for(const b of bees){ const bx=Math.round(b.x), by=Math.round(b.y);
       RR(ctx,bx,by,2,2,'#ffd84a'); RR(ctx,bx+1,by,1,2,'#3a2a20'); if(Math.floor(t*20+b.a)%2) RR(ctx,bx,by-1,1,1,'#ffffff'); }
     if(honeyReady()) bubble(139,81,icHoney,t); }
+  for(const v of visitors){ if(v.field!==curField) continue;
+    if(v.type==='butterfly'){ ctx.drawImage(Math.floor(v.a*8)%2?bflyA:bflyB, Math.round(v.x)-2, Math.round(v.y)-2);
+      if(Math.floor(v.a*10)%3===0) RR(ctx,Math.round(v.x)-5,Math.round(v.y)+1,1,1,'#fff3a0'); }
+    if(v.type==='coin'){ ctx.drawImage(icCoin, Math.round(v.x)-3, Math.round(v.y)-6); const s=Math.floor(v.a*6)%4;
+      if(s<2){ RR(ctx,Math.round(v.x)+3,Math.round(v.y)-9,1,3,'#ffffff'); RR(ctx,Math.round(v.x)+2,Math.round(v.y)-8,3,1,'#ffffff'); } } }
+  if(dad && dad.field===curField){ const st=Math.abs(dad.tx-dad.x)<1 && dad.life>5;
+    ctx.fillStyle='rgba(60,90,40,.3)'; ctx.fillRect(Math.round(dad.x)-5,dad.y-1,10,2);
+    ctx.drawImage(dadNpc, Math.round(dad.x)-5, dad.y-12-(st?0:Math.floor(dad.a*8)%2));
+    if(st){ bubble(Math.round(dad.x)+9, dad.y-20, icHeartBig, t); } }
+  if(SSHONG.showLetter && S.ss && S.ss.unread){ const ey=44+Math.round(Math.sin(t*3)*2); ctx.drawImage(icEnvelope,76,ey); if(Math.floor(t*3)%2) RR(ctx,86,ey-2,1,1,'#ffffff'); }
   if(ordersAttention()) bubble(11,48,icExcl,t);
   for(const b of birds) drawBird(b);
   drawWeather();
+  drawSs(t);
+  drawStar(); drawFairy(t);
+  if(tteok){ ctx.drawImage(icTteok, Math.round(tteok.x)-3, Math.round(tteok.y)-2); if(tteok.landed && Math.floor(t*3)%2) RR(ctx,tteok.x+3,tteok.y-4,1,1,'#ffffff'); }
   const wn=weatherNow();
   if(wn==='rain' || wn==='typhoon'){
     ctx.fillStyle = wn==='typhoon' ? 'rgba(50,60,80,.30)' : 'rgba(70,90,120,.16)'; ctx.fillRect(0,0,W,H);
@@ -1399,7 +2057,7 @@ $('modal').addEventListener('pointerdown',e=>{ if(e.target.id==='modal') closeMo
 function sellAll(){
   const v = saleValue();
   if(v<=0){ toast('팔 복숭아가 없어요. 익은 나무를 톡 눌러 수확해요'); sfx('no'); return 0; }
-  S.coins+=v; S.inv={}; S.gold=0; sfx('coin'); floatText(W/2,H/2,'+'+v+' 코인','gold'); save(); updHud(); return v;
+  S.coins+=v; S.inv={}; S.gold=0; S.stats.sells=(S.stats.sells||0)+1; sfx('coin'); floatText(W/2,H/2,'+'+v+' 코인','gold'); save(); updHud(); return v;
 }
 const upIcons = {spr:asURL(icDrop), scare:asURL(scarecrow), fert:asURL(icSprout), bee:asURL(icHive)};
 function tabs(list, cur, attr){ return `<div class="tabs">${list.map(([k,l])=>`<button data-${attr}="${k}" class="${k===cur?'on':''}">${l}</button>`).join('')}</div>`; }
@@ -1417,9 +2075,10 @@ function renderShop(tab){
     const lbl = !n ? '모든 밭에 나무가 가득해요' : n.kind==='slot' ? `${FIELDS[fieldOf(n.i)].name}에 ${planted+1}번째 나무 심기` : `새 밭 개척: ${FIELDS[n.f].name} (나무 2그루 포함)`;
     h += `<div class="row"><img src="${asURL(treeImg(4,false,false))}" alt="" style="object-fit:contain"><div class="t"><b>${n&&n.kind==='field'?'밭 개척하기':'나무 자리 늘리기'}</b>
       <small>${lbl} (지금 ${planted}/${S.trees.length}그루)</small></div>
-      ${!n?'':`<button class="btn" data-a="slot" ${S.coins>=n.cost?'':'disabled'}>${coin}${n.cost}</button>`}</div>`;
+      ${!n?'':(n.kind==='field' && farmLv()<FIELDS[n.f].lv)?`<span class="lv">Lv ${FIELDS[n.f].lv}에 열려요</span>`:`<button class="btn" data-a="slot" ${S.coins>=n.cost?'':'disabled'}>${coin}${n.cost}</button>`}</div>`;
     for(const k in UPGRADES){
       const u=UPGRADES[k], lv=S.up[k], max=lv>=u.cost.length;
+      if(u.lv && farmLv()<u.lv && !lv){ h += `<div class="row" style="opacity:.55"><img src="${upIcons[k]}" alt=""><div class="t"><b>${u.name}</b><small>${u.desc}</small></div><span class="lv">Lv ${u.lv}에 열려요</span></div>`; continue; }
       h += `<div class="row"><img src="${upIcons[k]}" alt=""><div class="t"><b>${u.name}</b> <span class="lv">Lv ${lv}/${u.cost.length}</span>
         <small>${u.desc}</small></div>
         ${max?'<span class="lv">최대</span>':`<button class="btn" data-a="up" data-k="${k}" ${S.coins>=u.cost[lv]?'':'disabled'}>${coin}${u.cost[lv]}</button>`}</div>`;
@@ -1428,6 +2087,7 @@ function renderShop(tab){
     h += `<p style="margin:0 0 4px;opacity:.8">꾸미기 하나마다 복숭아 판매가가 5%씩 올라요.</p>`;
     for(const d of DECOS){
       const own=!!S.deco[d.id];
+      if(d.lv && farmLv()<d.lv && !own){ h += `<div class="row" style="opacity:.55"><img src="${asURL(decoIcon(d.id),4)}" alt="" style="width:40px;height:34px;object-fit:contain"><div class="t"><b>${d.name}</b><small>${d.desc}</small></div><span class="lv">Lv ${d.lv}에 열려요</span></div>`; continue; }
       h += `<div class="row"><img src="${asURL(decoIcon(d.id),4)}" alt="" style="width:40px;height:34px;object-fit:contain"><div class="t"><b>${d.name}</b>
         <small>${d.desc}</small></div>
         ${own?'<span class="lv">설치함</span>':`<button class="btn" data-a="deco" data-k="${d.id}" ${S.coins>=d.price?'':'disabled'}>${coin}${d.price}</button>`}</div>`;
@@ -1440,7 +2100,7 @@ function renderShop(tab){
     if(a==='sell') sellAll();
     else if(a==='slot'){ const n=nextSlot(); if(n && n.kind==='slot') buySlot(n.i); else if(n) buyField(); }
     else if(a==='up'){ const k=b.dataset.k, c=UPGRADES[k].cost[S.up[k]]; if(S.coins>=c){ S.coins-=c; S.up[k]++; sfx('buy'); if(k==='bee'){ S.honeyAt=Date.now()+HONEY_HOURS*3600000; toast('꿀벌통을 놓았어요! 오른쪽 위에서 벌들이 날아다녀요',3200); } else toast(UPGRADES[k].name+' 레벨업!'); } }
-    else if(a==='deco'){ const d=DECOS.find(x=>x.id===b.dataset.k); if(d && !S.deco[d.id] && S.coins>=d.price){ S.coins-=d.price; S.deco[d.id]=true; sfx('buy'); toast(`${d.name}을(를) 설치했어요!`); } }
+    else if(a==='deco'){ const d=DECOS.find(x=>x.id===b.dataset.k); if(d && !S.deco[d.id] && S.coins>=d.price){ S.coins-=d.price; S.deco[d.id]=true; sfx('buy'); gainXP(5); toast(`${d.name}을(를) 설치했어요!`); } }
     save(); updHud(); renderShop(tab);
   });
 }
@@ -1449,10 +2109,11 @@ function renderInfo(tab){
   let h = tabs([['dex','도감'],['tree','나무'],['cat','고양이'],['rec','기록']], tab, 'tab');
   if(tab==='dex'){
     S.dexNew=false;
-    const found = VARIETIES.filter(v=>S.dex[v.id]).length;
+    const found = DEX_VARS.filter(v=>S.dex[v.id]).length;
     const now = VARIETIES.filter(v=>v.seasons.includes(curSeason)).map(v=>v.name).join(', ');
-    h += `<p style="margin:0 0 6px">모은 품종 <b>${found}</b> / ${VARIETIES.length}<br><small style="opacity:.75">지금은 ${SEASON_NAME[curSeason]}. 이 계절에 열리는 품종: ${now}</small></p><div class="dex">`;
+    h += `<p style="margin:0 0 6px">모은 품종 <b>${found}</b> / ${DEX_VARS.length}<br><small style="opacity:.75">지금은 ${SEASON_NAME[curSeason]}. 이 계절에 열리는 품종: ${now}</small></p><div class="dex">`;
     for(const v of VARIETIES){
+      if(v.secret && !S.dex[v.id]) continue;
       const has=!!S.dex[v.id];
       const tag = v.seasons.length===4?'사계절' : v.seasons.length? v.seasons.map(x=>SEASON_NAME[x]).join(', ') : '특별';
       h += `<div class="${has?'':'no'}"><img src="${asURL(VAR_IMG[v.id].icon)}" alt="">${has?v.name:'???'}<small>${tag}</small>
@@ -1489,8 +2150,10 @@ function renderInfo(tab){
       쫓아낸 고양이 <b>${st.cats}</b>마리, 쫓아낸 새 <b>${st.birds}</b>마리<br>
       물 준 횟수 <b>${st.water}</b>, 가지치기 <b>${st.prune}</b><br>
       들어준 의뢰 <b>${st.orders||0}</b>개, 출석 <b>${S.att.count}</b>일째<br>
-      잡은 벌레 <b>${st.bugs||0}</b>마리, 봉지 <b>${st.bags||0}</b>장, 이겨낸 태풍 <b>${st.typhoon||0}</b>번, 모은 꿀 <b>${st.honey||0}</b>통</p>
+      잡은 벌레 <b>${st.bugs||0}</b>마리, 봉지 <b>${st.bags||0}</b>장, 이겨낸 태풍 <b>${st.typhoon||0}</b>번, 모은 꿀 <b>${st.honey||0}</b>통<br>
+      찾은 비밀 <b>${Object.keys(eggs().found).filter(k=>EGG_KEYS.includes(k)).length}</b> / ${EGG_KEYS.length}</p>
       <p style="opacity:.8">${list}</p>
+      ${SSHONG.showLetter&&S.ss&&S.ss.found?'<p><button class="btn" id="hLetter" style="display:inline-flex;flex-direction:row"><img src="'+asURL(icEnvelope,2)+'" alt="" style="width:18px">분홍 편지 다시 보기</button></p>':''}
       <p><button class="btn" id="hHelp" style="display:inline-flex;flex-direction:row">도움말 보기</button>
       <button class="btn danger" id="hReset" style="display:inline-flex;flex-direction:row;margin-left:6px">처음부터</button></p></div>`;
   }
@@ -1501,14 +2164,16 @@ function renderInfo(tab){
     const i=+b.dataset.tn, row=b.closest('.row');
     row.querySelector('.t').innerHTML=`<input class="name" id="tnIn" maxlength="8" placeholder="나무 이름" value="${esc(S.trees[i].name||'')}">`;
     b.textContent='저장'; const inp=$('tnIn'); inp.focus();
-    const done=()=>{ S.trees[i].name=inp.value.trim().slice(0,8); save(); renderInfo('tree'); };
+    const done=()=>{ S.trees[i].name=inp.value.trim().slice(0,8); save(); if(ssName(S.trees[i].name)) ssTrigger('tree',i); else renderInfo('tree'); };
     b.onclick=done; inp.onkeydown=e=>{ if(e.key==='Enter') done(); };
   });
-  if($('catSave')) $('catSave').onclick=()=>{ const v=$('catName').value.trim().slice(0,8); S.cat.name=v; save(); toast(v?`고양이 이름을 '${v}'(으)로 지었어요`:'이름을 지웠어요'); renderInfo('cat'); };
+  if($('catSave')) $('catSave').onclick=()=>{ const v=$('catName').value.trim().slice(0,8); S.cat.name=v; save(); if(ssName(v)){ ssTrigger('cat'); return; }
+    const nv=v.replace(/\s/g,''); if(nv==='복숭아'||nv==='치즈'){ eggFound('catcolor'); burst(80,150,'heart',8); toast(nv==='복숭아'?'어? 고양이 얼룩이 분홍빛으로 물들었어요!':'어? 고양이가 노릇노릇 치즈색이 됐어요!',3200); renderInfo('cat'); return; } toast(v?`고양이 이름을 '${v}'(으)로 지었어요`:'이름을 지웠어요'); renderInfo('cat'); };
   if($('hHelp')) $('hHelp').onclick=showHelp;
+  if($('hLetter')) $('hLetter').onclick=openLetter;
   let armed=false;
   if($('hReset')) $('hReset').onclick=e=>{ if(!armed){ armed=true; e.target.textContent='정말요? 한 번 더'; return; }
-    S=normalize(newState()); S.seenHelp=true; curField=0; fieldKey=''; bugs=[]; typhoon=null; S.att.last=todayKey(); birds=[]; cat=null; gifts=[]; initOrders(); save(); updHud(); closeModal(); toast('새 농장을 시작했어요'); };
+    S=normalize(newState()); S.seenHelp=true; curField=0; fieldKey=''; bugs=[]; typhoon=null; visitors=[]; S.att.last=todayKey(); birds=[]; cat=null; gifts=[]; initOrders(); save(); updHud(); closeModal(); toast('새 농장을 시작했어요'); };
 }
 function showHelp(){
   const I=(c,t)=>`<div class="ico"><img src="${asURL(c)}" alt="">${t}</div>`;
@@ -1525,6 +2190,8 @@ function showHelp(){
     <p>왼쪽 위 의뢰판을 누르면 마을 사람들의 부탁을 볼 수 있어요.</p>
     <p>모은 코인으로 이가네 주막에서 막걸리, 파전, 새우구이, 바베큐를 먹으면 농사에 도움이 되는 효과가 생겨요. 매일 출석 보상과 오늘의 메뉴 할인도 있어요.</p>
     <p>앱을 꺼 둬도 나무는 계속 자라요. 물이 마르면 성장이 멈추니 가끔 들러 주세요.</p>
+    <p>위쪽 <b>Lv</b> 버튼을 누르면 오늘의 할 일, 놀이, 농장 레벨을 볼 수 있어요. 농장 레벨이 오르면 새 밭, 놀이, 꾸미기, 마을 건물이 하나씩 열려요.</p>
+    <p>가끔 황금 나비나 반짝이는 동전 같은 깜짝 손님이 나타나요. 놓치지 말고 톡!</p>
     <p class="small">이 안내는 오른쪽 위 ? 버튼으로 언제든 다시 볼 수 있어요.</p>
     <p style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn" id="hOk" style="flex-direction:row">${S.seenHelp?'닫기':'시작하기'}</button>
     ${(isStandalone||isApp)?'':'<button class="btn" id="hInstall" style="flex-direction:row">홈 화면에 앱으로 추가하기</button>'}</p></div>`);
@@ -1604,7 +2271,9 @@ const allMenu = ()=> evtIs('bok') ? [...MENU, SAMGYE] : MENU;
 const menuPrice = m => m.id===specialId() ? Math.round(m.price*0.6) : m.price;
 function minsLeft(ts){ return Math.max(0, Math.ceil((ts-Date.now())/60000)); }
 function renderBuffs(){
-  const el=$('buffs'); let h='';
+  const el=$('buffs'); ensureDaily();
+  const qd=S.daily.quests.filter(q=>q.done).length;
+  let h=`<button class="buff hub${hubAttention()?' new':''}" data-hub="1"><img src="${asURL(icTree,2)}" alt=""><b>Lv ${farmLv()}</b>할 일 ${qd}/${S.daily.quests.length}</button>`;
   if(Date.now()<S.buff.grow) h+=`<span class="buff"><img src="${asURL(FOOD.bbq,2)}" alt="">성장↑ ${minsLeft(S.buff.grow)}분</span>`;
   if(Date.now()<S.buff.gold) h+=`<span class="buff"><img src="${asURL(FOOD.makgeolli,2)}" alt="">황금↑ ${minsLeft(S.buff.gold)}분</span>`;
   if(S.buff.bonus>0) h+=`<span class="buff"><img src="${asURL(FOOD.shrimp,2)}" alt="">수확+2 ${S.buff.bonus}번</span>`;
@@ -1641,7 +2310,7 @@ function eat(id){
   if(id==='shrimp') S.buff.bonus += 3;
   if(id==='samgye'){ S.buff.grow = Math.max(now,S.buff.grow) + 60*60000; }
   if(id==='pajeon' || id==='samgye') S.trees.forEach((t,i)=>{ if(t.u){ t.water=100; if(fieldOf(i)===curField) burst(P(i)[0],P(i)[1],'water',8);} });
-  S.jumak.stamps++; S.jumak.eaten[id]=(S.jumak.eaten[id]||0)+1;
+  S.jumak.stamps++; S.jumak.eaten[id]=(S.jumak.eaten[id]||0)+1; gainXP(3);
   let service='';
   if(S.jumak.stamps%10===0){ S.coins+=30; service='<p>단골 도장을 다 모았어요! 사장님이 30코인을 챙겨 주셨어요.</p>'; }
   sfx('harvest'); buzz(15); save(); updHud(); renderBuffs();
@@ -1751,7 +2420,7 @@ function fillOrder(id){
     const ids=Object.keys(S.inv).filter(k=>S.inv[k]>0).sort((a,b)=>VAR[a].price-VAR[b].price);
     for(const k of ids){ const take=Math.min(need,S.inv[k]); S.inv[k]-=take; need-=take; if(!need) break; }
   } else S.inv[o.want]-=need;
-  S.coins+=o.reward; S.stats.orders=(S.stats.orders||0)+1;
+  S.coins+=o.reward; S.stats.orders=(S.stats.orders||0)+1; gainXP(15);
   S.orders=S.orders.filter(x=>x!==o); S.orderNext=Math.min(S.orderNext||Infinity, Date.now()+20*60000);
   sfx('coin'); buzz(15); toast(`${o.who}: 고마워요! (+${o.reward}코인)`); save(); updHud(); renderOrders();
 }
@@ -1791,7 +2460,8 @@ function updField(){
   const prevNeed = [...Array(curField).keys()].some(fieldNeeds);
   const nextNeed = [...Array(FIELDS.length).keys()].filter(f=>f>curField).some(fieldNeeds);
   const locked=curField>=S.fields, cost=locked?FIELDS[curField].cost:0;
-  const key=[curField,S.fields,maxF,prevNeed,nextNeed,locked,locked&&S.coins>=cost].join();
+  const lvReq=locked?(FIELDS[curField].lv||1):1, lvOk=farmLv()>=lvReq;
+  const key=[curField,S.fields,maxF,prevNeed,nextNeed,locked,locked&&S.coins>=cost,lvOk].join();
   if(key===fieldKey) return; fieldKey=key;
   $('fPrev').hidden = curField<=0; $('fNext').hidden = curField>=maxF;
   $('fPrev').classList.toggle('new',prevNeed); $('fNext').classList.toggle('new',nextNeed);
@@ -1800,7 +2470,8 @@ function updField(){
   if(locked){
     L.hidden=false;
     L.innerHTML = `<b>${FIELDS[curField].name}</b><small>풀만 무성한 빈 땅이에요.<br>개척하면 복숭아나무 두 그루를 바로 심어 줘요.</small>
-      <button class="btn" id="fBuy" ${S.coins>=cost?'':'disabled'}><img src="${asURL(icCoin)}" alt="">${cost} 개척하기</button>`;
+      ${lvOk?`<button class="btn" id="fBuy" ${S.coins>=cost?'':'disabled'}><img src="${asURL(icCoin)}" alt="">${cost} 개척하기</button>`
+            :`<button class="btn" id="fBuy" disabled>농장 레벨 ${lvReq}에 열려요</button>`}`;
     $('fBuy').onclick=buyField;
   } else L.hidden=true;
 }
@@ -1811,7 +2482,11 @@ curField = S.curField||0;
 const catBtn=$('catBtn');
 catBtn.innerHTML=`<img src="${asURL(icChuru)}" alt="">츄르 주기 <img src="${asURL(icCoin)}" alt="">${CHURU}`;
 catBtn.onclick=feedCat;
+const playBtn=$('playBtn');
+playBtn.innerHTML=`<img src="${asURL(icFeather)}" alt="">놀아 주기`;
+playBtn.onclick=startCatPlay;
 $('bSound').onclick=()=>{ S.muted=!S.muted; updHud(); save(); if(!S.muted) sfx('pet'); toast(S.muted?'효과음을 껐어요':'효과음을 켰어요',1200); };
+$('buffs').addEventListener('click', e=>{ if(e.target.closest('[data-hub]')) openHub(); });
 $('bShop').onclick=()=>renderShop();
 $('bSell').onclick=()=>sellAll();
 $('bJumak').onclick=()=>renderJumak();
@@ -1827,14 +2502,18 @@ function update(dt){
   simNow = Date.now(); growTrees(dt, catTree());
   birdTimer-=dt; if(birdTimer<=0){ spawnBirds(); birdTimer=rand(45,90)*(1+0.6*S.up.scare); }
   catTimer-=dt; if(catTimer<=0){ if(!cat) spawnCat(); catTimer = S.cat.aff>=80 ? rand(60,120) : rand(90,180); }
-  updateBirds(dt); updateCat(dt); updateBugs(dt); updateBees(dt);
+  updateBirds(dt); updateCat(dt); updateBugs(dt); updateBees(dt); updateVisitors(dt); updateDad(dt); updateStar(dt); updateTteok(dt); updateFairy(dt);
   const showCB = !!(cat && cat.field===curField && !cat.fed && ['enter','sleep','pause','dash'].includes(cat.state));
   if(catBtn.hidden===showCB) catBtn.hidden=!showCB;
+  const showPB = !!canCatPlay();
+  if(playBtn.hidden===showPB) playBtn.hidden=!showPB;
+  if(showPB){ const b=showCB?'52px':'14px'; if(playBtn.style.bottom!==b) playBtn.style.bottom=b; }
   for(const p of parts){ p.life-=dt; p.vy+=p.g*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; }
   parts=parts.filter(p=>p.life>0);
   saveT+=dt; if(saveT>5){ saveT=0; save(); }
   clockT+=dt; if(clockT>1){ clockT=0; curSeason=season(); weatherTick(); couponTick(); refillOrders(); updClock(); updHud(); renderBuffs(); updField();
     if(S.seenHelp && Math.random()<0.02) checkEvent();
+    if(S.ss && S.ss.found && !dad && S.ss.dadDay!==todayKey() && Math.random()<0.03) spawnDad();
     if(attendanceDue() && modalIdle() && S.seenHelp) doAttendance(); }
 }
 function welcomeBack(sec){
@@ -1863,6 +2542,8 @@ fit(); updHud(); updClock(); updField();
 if(document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
 if(!S.orders.length && !S.orderNext) initOrders();
 if(S.seenHelp) checkEvent();
+if(S.seenHelp) checkApril();
+if(aprilFools()) $('icPeach').src=asURL(icApple);
 if(!S.seenHelp) modalQueue.push(showHelp);
 if(!S.installSeen && !isStandalone && !isApp && (isIOS || isKakao || (isAndroid && isInApp))) modalQueue.push(showInstallGuide);
 if(attendanceDue()) modalQueue.push(doAttendance);
@@ -1870,7 +2551,7 @@ if(REAL_FARM.shopUrl && S.shopNotice!==REAL_FARM.shopUrl) modalQueue.push(showSh
 nextModal();
 requestAnimationFrame(frame);
 if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
-window.__peach = {S:()=>S, bugs:()=>bugs, spawnBug, setWeather:w=>{weatherOverride=w}, setEvent:e=>{eventOverride=e}, startTyphoon, typhoonHit, ty:()=>typhoon, checkEvent, couponTick, goField, buyField, field:()=>curField, cat:()=>cat, birds:()=>birds, gifts:()=>gifts, setSeason:s=>{seasonOverride=s;curSeason=s;}, feedCat, newOrder, spawnCat:()=>{ if(!cat) spawnCat(); }, spawnBirds, ripe:()=>{ S.trees.forEach(t=>{ if(t.u){t.stage=3;advance(t);} }); }};
+window.__peach = {S:()=>S, pondTap, moonTap, scareTap, star:()=>star, setStar:v=>{star=v}, starTap, tteok:()=>tteok, checkFairy, fairy:()=>fairy, checkApril, napTap, ssTrigger, ssOpen, openLetter, dad:()=>dad, talkDad, ssGlow, gainXP, openHub, startMini, endMini:()=>endMini(false), mg:()=>mg, cp:()=>cp, startCatPlay, endCatPlay:()=>endCatPlay(false), spawnVisitor, visitors:()=>visitors, shareFarm, levelOf, farmLv, ensureDaily, bugs:()=>bugs, spawnBug, setWeather:w=>{weatherOverride=w}, setEvent:e=>{eventOverride=e}, startTyphoon, typhoonHit, ty:()=>typhoon, checkEvent, couponTick, goField, buyField, field:()=>curField, cat:()=>cat, birds:()=>birds, gifts:()=>gifts, setSeason:s=>{seasonOverride=s;curSeason=s;}, feedCat, newOrder, spawnCat:()=>{ if(!cat) spawnCat(); }, spawnBirds, ripe:()=>{ S.trees.forEach(t=>{ if(t.u){t.stage=3;advance(t);} }); }};
 </script>
 </body>
 </html>
