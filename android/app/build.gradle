@@ -5,6 +5,8 @@ plugins {
 // 앱이 여는 주소. GitHub Actions에서 저장소 이름으로 자동으로 채워져요.
 def siteUrl = project.findProperty('siteUrl') ?: 'https://jihwan1239.github.io/peach-farm/'
 def vCode = (project.findProperty('versionCode') ?: '1') as Integer
+def ksPath = System.getenv('KEYSTORE_FILE')
+def ksPass = System.getenv('KEYSTORE_PASSWORD')
 
 android {
     namespace 'com.igane.peach'
@@ -19,19 +21,22 @@ android {
         resValue 'string', 'site_url', siteUrl
     }
 
+    // 서명 키는 저장소에 두지 않아요. GitHub Actions가 Secrets에서 꺼내 임시 파일로 만들어 넘겨줘요.
     signingConfigs {
         release {
-            storeFile file('peach.keystore')
-            storePassword 'igane-peach'
-            keyAlias 'peach'
-            keyPassword 'igane-peach'
+            if (ksPath) {
+                storeFile file(ksPath)
+                storePassword ksPass
+                keyAlias 'peach'
+                keyPassword ksPass
+            }
         }
     }
 
     buildTypes {
         release {
             minifyEnabled false
-            signingConfig signingConfigs.release
+            signingConfig ksPath ? signingConfigs.release : signingConfigs.debug
         }
     }
 
