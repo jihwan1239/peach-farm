@@ -446,6 +446,8 @@ const ATT_REWARD = [10,15,20,25,30,40,50]; // 출석 보상 (7일째는 황금 �
 const APK_URL = 'https://github.com/jihwan1239/peach-farm/releases/latest/download/igane-peach.apk';
 
 // ===== 이가네 주막 메뉴 =====
+// 적힌 값은 농장 레벨 1 기준이에요. 레벨이 하나 오를 때마다 JUMAK_LV_UP(15%)씩 비싸져요.
+const JUMAK_LV_UP = 0.15;
 const MENU = [
   {id:'makgeolli', name:'막걸리', price:15, desc:'30분 동안 황금 복숭아가 두 배 잘 열려요', say:'캬~ 기분 좋게 한 사발!'},
   {id:'pajeon',    name:'파전',   price:25, desc:'든든하게 먹고 모든 나무에 물을 가득 줘요', say:'바삭바삭, 힘이 나서 물을 다 길어 왔어요'},
@@ -2758,7 +2760,10 @@ function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+String(d.get
 function dayNum(){ const d=new Date(); return d.getFullYear()*372+d.getMonth()*31+d.getDate(); }
 const specialId = ()=>MENU[dayNum()%MENU.length].id;
 const allMenu = ()=> evtIs('bok') ? [...MENU, SAMGYE] : MENU;
-const menuPrice = m => m.id===specialId() ? Math.round(m.price*0.6) : m.price;
+const jumakMul = ()=> 1 + JUMAK_LV_UP*(farmLv()-1);
+const menuBase = m => Math.round(m.price*jumakMul()/5)*5;
+const menuPrice = m => m.id===specialId() ? Math.round(menuBase(m)*0.6/5)*5 : menuBase(m);
+const stampBonus = ()=> Math.round(30*jumakMul()/5)*5;
 function minsLeft(ts){ return Math.max(0, Math.ceil((ts-Date.now())/60000)); }
 function renderBuffs(){
   const el=$('buffs'); ensureDaily();
@@ -2780,13 +2785,13 @@ function renderJumak(){
   const st=S.jumak.stamps%10;
   let h=`<div class="jumak-head"><img src="${asURL(jumakHouse)}" alt=""><div>
     <div>어서 오시게! 농사일에 고생 많았지?</div>
-    <small style="opacity:.75">단골 도장 ${st}/10 (다 모으면 서비스 30코인)</small>
+    <small style="opacity:.75">단골 도장 ${st}/10 (다 모으면 서비스 ${stampBonus()}코인)</small>${farmLv()>1?`<small style="display:block;opacity:.6">농장이 커져서 손님이 늘었다며 값이 조금 올랐어요</small>`:''}
     <div class="stamps">${Array.from({length:10},(_,i)=>`<i class="${i<st?'on':''}"></i>`).join('')}</div></div></div>`;
   for(const m of allMenu()){
-    const p=menuPrice(m), sp=p!==m.price;
+    const p=menuPrice(m), base=menuBase(m), sp=p!==base;
     h+=`<div class="row"><img src="${asURL(FOOD[m.id])}" alt="" style="object-fit:contain"><div class="t"><b>${m.name}</b>${sp?'<span class="badge">오늘의 메뉴</span>':''}
       <small>${m.desc}</small></div>
-      <button class="btn" data-m="${m.id}" ${S.coins>=p?'':'disabled'}>${coin}${sp?`<s class="old">${m.price}</s>`:''}${p}</button></div>`;
+      <button class="btn" data-m="${m.id}" ${S.coins>=p?'':'disabled'}>${coin}${sp?`<s class="old">${base}</s>`:''}${p}</button></div>`;
   }
   openModal('이가네 주막 (코인 '+S.coins+')', h);
   $('mBody').querySelectorAll('button[data-m]').forEach(b=>b.onclick=()=>eat(b.dataset.m));
@@ -2802,7 +2807,7 @@ function eat(id){
   if(id==='pajeon' || id==='samgye') S.trees.forEach((t,i)=>{ if(t.u){ t.water=100; if(fieldOf(i)===curField) burst(P(i)[0],P(i)[1],'water',8);} });
   S.jumak.stamps++; S.jumak.eaten[id]=(S.jumak.eaten[id]||0)+1; gainXP(3);
   let service='';
-  if(S.jumak.stamps%10===0){ S.coins+=30; service='<p>단골 도장을 다 모았어요! 사장님이 30코인을 챙겨 주셨어요.</p>'; }
+  if(S.jumak.stamps%10===0){ const sb=stampBonus(); S.coins+=sb; service=`<p>단골 도장을 다 모았어요! 사장님이 ${sb}코인을 챙겨 주셨어요.</p>`; }
   sfx('harvest'); buzz(15); save(); updHud(); renderBuffs();
   openModal('이가네 주막', `<div class="eat"><img src="${asURL(FOOD[id],8)}" alt="${m.name}">
     <p style="font-size:15px;margin:14px 0 4px">냠냠, ${m.name} 맛있다!</p><p style="opacity:.8;margin:0 0 6px">${m.say}</p>${service}
