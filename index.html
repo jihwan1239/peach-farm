@@ -166,6 +166,7 @@ button.buff{font:inherit;font-size:11px;color:var(--ink);cursor:pointer;position
 @keyframes sh{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
 input.vol{width:100%;margin:8px 0 2px;accent-color:#ff8a80;-webkit-user-select:auto;user-select:auto}
 input.vol:disabled{opacity:.4}
+.dlv{display:flex;gap:3px;margin-top:4px}.dlv i{width:9px;height:9px;border:2px solid #d9a35a;background:#fff;display:block}.dlv i.on{background:#ffcf5a}
 .fhead{margin:10px 0 2px;font-size:13px;color:#d26a5c}
 input.name{font:inherit;font-size:14px;border:2px solid var(--line);padding:6px 8px;width:130px;background:#fff;color:var(--ink);border-radius:2px}
 #bar button,.btn{font:inherit;color:var(--ink);background:var(--panel);border:2px solid var(--line);
@@ -240,16 +241,16 @@ const TREE_POS = [[48,104],[112,104],[48,164],[112,164],[48,224],[112,224]];
 // 밭 3개 x 6자리 = 최대 18그루. 밭을 개척하면 앞 두 자리는 바로 심어져요.
 const FIELDS = [
   {name:'앞밭',      cost:0,    lv:1},
-  {name:'개울가 밭', cost:900,  lv:4},
-  {name:'언덕 밭',   cost:3000, lv:8},
+  {name:'개울가 밭', cost:2500, lv:4},
+  {name:'언덕 밭',   cost:8000, lv:8},
 ];
-const SLOT_COST = [0,0,40,100,220,450,  0,0,500,650,800,1000,  0,0,1300,1600,2000,2500];
+const SLOT_COST = [0,0,100,250,550,1100,  0,0,1250,1600,2000,2500,  0,0,3200,4000,5000,6200];
 const P = i => TREE_POS[i%6];
 const fieldOf = i => Math.floor(i/6);
 const STAGE_MIN = [3,8,12,15];          // 단계별 성장 시간(분): 새싹→어린나무→꽃→풋열매→익음
 const WATER_MIN = 90;                    // 물이 다 마르는 시간(분)
 const PRUNE_MIN = 150;                   // 가지가 무성해지는 시간(분)
-const PEACH_PRICE = 6, GOLD_PRICE = 60;
+const PEACH_PRICE = 3, GOLD_PRICE = 30;
 
 // ===== 실제 복숭아 농장 정보 (여기만 바꾸면 돼요) =====
 const REAL_FARM = {
@@ -279,28 +280,31 @@ const REAL_FARM = {
 // ===== 복숭아 품종 (도감) =====
 // seasons: 그 계절에 열리는 품종, w: 잘 열리는 정도, price: 판매가
 const VARIETIES = [
-  {id:'baekdo',    name:'백도',       seasons:['spring','summer','autumn','winter'], w:10, price:6,  pal:['#ffd6cc','#fff6f0','#ffaaa0'], desc:'하얗고 부드러운 기본 복숭아'},
-  {id:'hwangdo',   name:'황도',       seasons:['summer','autumn'], w:7, price:7,  pal:['#ffd27a','#fff1c9','#f2a54a'], desc:'노랗고 단단해요'},
-  {id:'madoka',    name:'마도카',     seasons:['spring'], w:5, price:9,  pal:['#ffb8c0','#fff0f0','#f07a8a'], desc:'봄빛을 닮은 분홍 복숭아'},
-  {id:'sinbi',     name:'신비 천도',   seasons:['spring','summer'], w:3, price:10, pal:['#e8455a','#ff9aa5','#a8233a'], desc:'털 없이 매끈한 천도복숭아'},
-  {id:'daegeuk',   name:'대극천',     seasons:['summer'], w:6, price:8,  pal:['#ff9a9a','#ffe0e0','#e0566a'], desc:'아삭하고 달콤한 여름 복숭아'},
-  {id:'mibaek',    name:'미백도',     seasons:['summer'], w:6, price:8,  pal:['#ffe8e0','#ffffff','#ffb4a8'], desc:'물이 많고 향이 진해요'},
-  {id:'flat',      name:'납작복숭아', seasons:['summer'], w:2, price:15, pal:['#ffc49a','#fff0e0','#f08a60'], desc:'동글납작 귀여운 모양'},
-  {id:'janghowon', name:'장호원 황도', seasons:['autumn'], w:6, price:9,  pal:['#ffc04a','#ffe8a8','#e08a2a'], desc:'가을 햇살을 머금은 진한 황도'},
-  {id:'elberta',   name:'엘버트',     seasons:['autumn'], w:5, price:8,  pal:['#ffb070','#ffe2c4','#e07a40'], desc:'새콤달콤 옛날 복숭아'},
-  {id:'cheonjung', name:'천중도백도', seasons:['autumn'], w:2, price:15, pal:['#fff0e8','#ffffff','#ffc0b0'], desc:'늦게 익는 크고 귀한 백도'},
-  {id:'cheonha',   name:'천하제일도', seasons:['summer','autumn'], w:2, price:18, pal:['#ff8fa0','#ffe6ea','#d9405a'], desc:'크고 달콤한 최고급 복숭아'},
-  {id:'snow',      name:'눈꽃복숭아', seasons:['winter'], w:4, price:14, pal:['#e8f4ff','#ffffff','#a8c8f0'], desc:'겨울에만 열리는 신비한 복숭아'},
-  {id:'heart',     name:'하트복숭아', seasons:[], w:0, price:20, pal:['#ff8fb0','#ffe0ea','#e0507a'], desc:'쓰담쓰담을 많이 받은 나무에 가끔 열려요'},
-  {id:'catpeach',  name:'냥복숭아',   seasons:[], w:0, price:25, pal:['#fffaf2','#ffffff','#ffd257'], desc:'고양이와 단짝이 되면 가끔 열려요'},
-  {id:'sshong',    name:'비밀 복숭아',   seasons:[], w:0, price:30, secret:true, pal:['#ff9ab4','#fff0f4','#e0507a'], desc:'세상에서 제일 달콤한 복숭아. 이 농장이 시작된 이유'},
-  {id:'gold',      name:'황금 복숭아', seasons:[], w:0, price:60, pal:['#ffd84a','#fff8c2','#e8a923'], desc:'아주 드물게 열리는 빛나는 복숭아'},
+  {id:'baekdo',    name:'백도',       seasons:['spring','summer','autumn','winter'], w:10, price:3,  pal:['#ffd6cc','#fff6f0','#ffaaa0'], desc:'하얗고 부드러운 기본 복숭아'},
+  {id:'hwangdo',   name:'황도',       seasons:['summer','autumn'], w:7, price:4,  pal:['#ffd27a','#fff1c9','#f2a54a'], desc:'노랗고 단단해요'},
+  {id:'madoka',    name:'마도카',     seasons:['spring'], w:5, price:5,  pal:['#ffb8c0','#fff0f0','#f07a8a'], desc:'봄빛을 닮은 분홍 복숭아'},
+  {id:'sinbi',     name:'신비 천도',   seasons:['spring','summer'], w:3, price:5, pal:['#e8455a','#ff9aa5','#a8233a'], desc:'털 없이 매끈한 천도복숭아'},
+  {id:'daegeuk',   name:'대극천',     seasons:['summer'], w:6, price:4,  pal:['#ff9a9a','#ffe0e0','#e0566a'], desc:'아삭하고 달콤한 여름 복숭아'},
+  {id:'mibaek',    name:'미백도',     seasons:['summer'], w:6, price:4,  pal:['#ffe8e0','#ffffff','#ffb4a8'], desc:'물이 많고 향이 진해요'},
+  {id:'flat',      name:'납작복숭아', seasons:['summer'], w:2, price:8, pal:['#ffc49a','#fff0e0','#f08a60'], desc:'동글납작 귀여운 모양'},
+  {id:'janghowon', name:'장호원 황도', seasons:['autumn'], w:6, price:5,  pal:['#ffc04a','#ffe8a8','#e08a2a'], desc:'가을 햇살을 머금은 진한 황도'},
+  {id:'elberta',   name:'엘버트',     seasons:['autumn'], w:5, price:4,  pal:['#ffb070','#ffe2c4','#e07a40'], desc:'새콤달콤 옛날 복숭아'},
+  {id:'cheonjung', name:'천중도백도', seasons:['autumn'], w:2, price:8, pal:['#fff0e8','#ffffff','#ffc0b0'], desc:'늦게 익는 크고 귀한 백도'},
+  {id:'cheonha',   name:'천하제일도', seasons:['summer','autumn'], w:2, price:9, pal:['#ff8fa0','#ffe6ea','#d9405a'], desc:'크고 달콤한 최고급 복숭아'},
+  {id:'snow',      name:'눈꽃복숭아', seasons:['winter'], w:4, price:7, pal:['#e8f4ff','#ffffff','#a8c8f0'], desc:'겨울에만 열리는 신비한 복숭아'},
+  {id:'heart',     name:'하트복숭아', seasons:[], w:0, price:10, pal:['#ff8fb0','#ffe0ea','#e0507a'], desc:'쓰담쓰담을 많이 받은 나무에 가끔 열려요'},
+  {id:'catpeach',  name:'냥복숭아',   seasons:[], w:0, price:12, pal:['#fffaf2','#ffffff','#ffd257'], desc:'고양이와 단짝이 되면 가끔 열려요'},
+  {id:'sshong',    name:'비밀 복숭아',   seasons:[], w:0, price:15, secret:true, pal:['#ff9ab4','#fff0f4','#e0507a'], desc:'세상에서 제일 달콤한 복숭아. 이 농장이 시작된 이유'},
+  {id:'gold',      name:'황금 복숭아', seasons:[], w:0, price:30, pal:['#ffd84a','#fff8c2','#e8a923'], desc:'아주 드물게 열리는 빛나는 복숭아'},
 ];
 const VAR = {}; VARIETIES.forEach(v=>VAR[v.id]=v);
 const DEX_VARS = VARIETIES.filter(v=>!v.secret);
 const SEASON_NAME = {spring:'봄', summer:'여름', autumn:'가을', winter:'겨울'};
 
-// ===== 꾸미기 (하나당 복숭아 판매가 +5%) =====
+// ===== 꾸미기 =====
+// 설치하면 Lv 1. 레벨 하나마다 복숭아 판매가 +2% (최대 Lv 5).
+// 레벨업 비용 = 원래 가격 x DECO_UP[지금 레벨]
+const DECO_MAX = 5, DECO_PCT = 2, DECO_UP = [0,3,6,12,24];
 const DECOS = [
   {id:'pinwheel', name:'바람개비',   price:30,  desc:'바람 따라 빙글빙글 돌아요'},
   {id:'mailbox',  name:'빨간 우체통', price:40,  desc:'누르면 진짜 농장 소식을 볼 수 있어요'},
@@ -343,9 +347,9 @@ const HONEY_HOURS = 2, HONEY_COINS = 25;
 
 // ===== 작은 목장 (농장 레벨 9부터, 밭 오른쪽 끝) =====
 const RANCH = {
-  name:'작은 목장', cost:1500, lv:9,
-  henCost:[0,0,120,180,260,360],     // 닭. 처음 두 마리는 목장을 열면 같이 와요
-  rabbitCost:[200,280,380,500],      // 토끼 (농장 레벨 10부터)
+  name:'작은 목장', cost:4000, lv:9,
+  henCost:[0,0,300,450,650,900],     // 닭. 처음 두 마리는 목장을 열면 같이 와요
+  rabbitCost:[500,700,950,1250],      // 토끼 (농장 레벨 10부터)
   eggMin:20,                         // 닭 한 마리가 달걀을 낳는 시간(분)
   eggCoins:6, goldEggCoins:40, goldEggChance:0.05,
   feedCost:20, feedHours:4,          // 모이통을 한 번 채우면 닭 4마리가 4시간 먹어요
@@ -484,7 +488,7 @@ function normalize(S){
   S.cat = S.cat || {aff:0, name:'', fed:0};
   S.att = S.att || {last:'', count:0};
   S.orders = S.orders || []; S.orderNext = S.orderNext || 0;
-  S.deco = S.deco || {};
+  S.deco = S.deco || {}; for(const k in S.deco) if(S.deco[k]===true) S.deco[k]=1;
   while(S.trees.length < FIELDS.length*6) S.trees.push(newTree(false));
   S.trees.forEach(t=>{ if(t.u && !t.born) t.born = S.last || Date.now(); t.harvests = t.harvests||0; });
   S.up.bee = S.up.bee||0; S.honeyAt = S.honeyAt||0; S.evtSeen = S.evtSeen||{}; S.coupon = S.coupon||{};
@@ -1131,8 +1135,10 @@ function pickVariety(t){
 }
 const peachCount = ()=>Object.values(S.inv).reduce((a,b)=>a+b,0);
 const decoCount = ()=>DECOS.filter(d=>S.deco[d.id]).length;
-const priceOf = id => Math.round(VAR[id].price*(1+0.05*decoCount())*10)/10;
-function saleValue(){ let v=0; for(const id in S.inv) v+=S.inv[id]*priceOf(id); return Math.round(v + S.gold*GOLD_PRICE*(1+0.05*decoCount())); }
+const decoLv = id => +S.deco[id]||0;
+const decoPct = ()=> DECOS.reduce((a,d)=>a+decoLv(d.id),0)*DECO_PCT;
+const priceOf = id => Math.round(VAR[id].price*(1+decoPct()/100)*10)/10;
+function saleValue(){ let v=0; for(const id in S.inv) v+=S.inv[id]*priceOf(id); return Math.round(v + S.gold*GOLD_PRICE*(1+decoPct()/100)); }
 function discover(id,n){
   const first = !S.dex[id];
   S.dex[id]=(S.dex[id]||0)+n;
@@ -2534,7 +2540,7 @@ function renderShop(tab){
     const v = saleValue();
     const detail = Object.entries(S.inv).filter(([,c])=>c>0).map(([id,c])=>`${VAR[id].name} ${c}`).join(', ');
     h += `<div class="row"><img src="${asURL(icPeach)}" alt=""><div class="t"><b>복숭아 팔기</b>
-      <small>${detail||'팔 복숭아가 없어요'}${S.gold?`, 황금 ${S.gold}`:''}${decoCount()?` (꾸미기 덕분에 +${decoCount()*5}%)`:''}</small></div>
+      <small>${detail||'팔 복숭아가 없어요'}${S.gold?`, 황금 ${S.gold}`:''}${decoPct()?` (꾸미기 덕분에 +${decoPct()}%)`:''}</small></div>
       <button class="btn" data-a="sell" ${v?'':'disabled'}>${coin}${v}</button></div>`;
     const n=nextSlot(), planted=S.trees.filter(t=>t.u).length;
     const lbl = !n ? '모든 밭에 나무가 가득해요' : n.kind==='slot' ? `${FIELDS[fieldOf(n.i)].name}에 ${planted+1}번째 나무 심기` : `새 밭 개척: ${FIELDS[n.f].name} (나무 2그루 포함)`;
@@ -2553,13 +2559,16 @@ function renderShop(tab){
         ${max?'<span class="lv">최대</span>':`<button class="btn" data-a="up" data-k="${k}" ${S.coins>=u.cost[lv]?'':'disabled'}>${coin}${u.cost[lv]}</button>`}</div>`;
     }
   } else {
-    h += `<p style="margin:0 0 4px;opacity:.8">꾸미기 하나마다 복숭아 판매가가 5%씩 올라요.</p>`;
+    h += `<p style="margin:0 0 4px;opacity:.8">꾸미기를 설치하거나 레벨을 올릴 때마다 복숭아 판매가가 ${DECO_PCT}%씩 올라요. 지금 <b>+${decoPct()}%</b></p>`;
     for(const d of DECOS){
       const own=!!S.deco[d.id];
       if(d.lv && farmLv()<d.lv && !own){ h += `<div class="row" style="opacity:.55"><img src="${asURL(decoIcon(d.id),4)}" alt="" style="width:40px;height:34px;object-fit:contain"><div class="t"><b>${d.name}</b><small>${d.desc}</small></div><span class="lv">Lv ${d.lv}에 열려요</span></div>`; continue; }
       h += `<div class="row"><img src="${asURL(decoIcon(d.id),4)}" alt="" style="width:40px;height:34px;object-fit:contain"><div class="t"><b>${d.name}</b>
-        <small>${d.desc}</small></div>
-        ${own?'<span class="lv">설치함</span>':`<button class="btn" data-a="deco" data-k="${d.id}" ${S.coins>=d.price?'':'disabled'}>${coin}${d.price}</button>`}</div>`;
+        <small>${d.desc}</small>
+        ${own?`<div class="dlv">${'<i class="on"></i>'.repeat(decoLv(d.id))}${'<i></i>'.repeat(DECO_MAX-decoLv(d.id))}</div>`:''}</div>
+        ${!own?`<button class="btn" data-a="deco" data-k="${d.id}" ${S.coins>=d.price?'':'disabled'}>${coin}${d.price}</button>`
+          : decoLv(d.id)>=DECO_MAX?'<span class="lv">최고 레벨</span>'
+          : `<button class="btn" data-a="decoUp" data-k="${d.id}" ${S.coins>=d.price*DECO_UP[decoLv(d.id)]?'':'disabled'}>Lv↑ ${coin}${d.price*DECO_UP[decoLv(d.id)]}</button>`}</div>`;
     }
   }
   openModal('상점 (코인 '+S.coins+')', h);
@@ -2571,7 +2580,10 @@ function renderShop(tab){
     else if(a==='ranchOpen'){ openRanch(); if(S.ranch.open){ closeModal(); goField(RANCH_F); return; } }
     else if(a==='slot'){ const n=nextSlot(); if(n && n.kind==='slot') buySlot(n.i); else if(n) buyField(); }
     else if(a==='up'){ const k=b.dataset.k, c=UPGRADES[k].cost[S.up[k]]; if(S.coins>=c){ S.coins-=c; S.up[k]++; sfx('buy'); if(k==='bee'){ S.honeyAt=Date.now()+HONEY_HOURS*3600000; toast('꿀벌통을 놓았어요! 오른쪽 위에서 벌들이 날아다녀요',3200); } else toast(UPGRADES[k].name+' 레벨업!'); } }
-    else if(a==='deco'){ const d=DECOS.find(x=>x.id===b.dataset.k); if(d && !S.deco[d.id] && S.coins>=d.price){ S.coins-=d.price; S.deco[d.id]=true; sfx('buy'); gainXP(5); toast(`${d.name}을(를) 설치했어요!`); } }
+    else if(a==='decoUp'){ const d=DECOS.find(x=>x.id===b.dataset.k), lv=d?decoLv(d.id):0, c=d?d.price*DECO_UP[lv]:0;
+      if(d && lv>=1 && lv<DECO_MAX && S.coins>=c){ S.coins-=c; S.deco[d.id]=lv+1; S.stats.decoUp=(S.stats.decoUp||0)+1; sfx('buy'); gainXP(5+lv*5);
+        toast(`${d.name} Lv ${lv+1}! 판매가가 ${DECO_PCT}% 더 올랐어요`); } }
+    else if(a==='deco'){ const d=DECOS.find(x=>x.id===b.dataset.k); if(d && !S.deco[d.id] && S.coins>=d.price){ S.coins-=d.price; S.deco[d.id]=1; sfx('buy'); gainXP(5); toast(`${d.name}을(를) 설치했어요!`); } }
     save(); updHud(); renderShop(tab);
   });
 }
